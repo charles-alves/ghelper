@@ -1,0 +1,103 @@
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(
+    name = "gh",
+    about = "Auxilia na utilização do Git, com alias e tarefas automatizadas"
+)]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Option<Command>
+}
+
+#[derive(Subcommand)]
+pub enum Command {
+    Config {
+        #[arg(short, long)]
+        jira: Option<String>,
+        #[arg(short, long)]
+        git: Option<String>
+    },
+    /// Lista as branches existentes para o repositório selecionado
+    #[command(name = "b")]
+    Branchs {
+        repo: Option<String>
+    },
+    /// Lista as branches existentes para o repositório em ordem decrescente
+    #[command(name = "t")]
+    Tags {
+        repo: Option<String>
+    },
+    /// Clona um novo repositório ao workspace
+    #[command(name = "clo")]
+    Clone {
+        /// Nome do repositório que será clonado
+        repo: String
+    },
+    /// Realiza o checkout interativo em uma branch do repositório
+    /// caso a branch exista somente no remoto ela será criada localmente
+    #[command(name = "ci")]
+    InteractiveCheckout {},
+    /// Realiza o delete interativo de branchs locais do repositório
+    #[command(name = "di")]
+    InteractiveDelete {},
+    /// Executa o push para o remoto, independente da branch já existir
+    Up {},
+    /// Lista os projetos clonados
+    #[command(name = "pjts")]
+    Projects {
+        /// Possibilita filtrar os projetos
+        filter: Option<String>
+    },
+    /// Abre o repositório no browser na tela de busca
+    Search {
+        /// Filtro utilizado para realizar a busca
+        filter: Option<String>
+    },
+    /// Abre o devconsole para um projeto e páginas especificadas via parâmetros
+    Console {
+        #[arg(short, long, conflicts_with_all = ["database", "kubernates", "kafka"])]
+        consul: bool,
+        #[arg(short = 'b', long, conflicts_with_all = ["consul", "kubernates", "kafka"])]
+        database: bool,
+        #[arg(short, long, conflicts_with_all = ["database", "consul", "kafka"])]
+        kubernates: bool,
+        #[arg(short = 't', long, conflicts_with_all = ["database", "kubernates", "consul"])]
+        kafka: bool,
+        #[arg(short, long, conflicts_with_all = ["homolog", "stress", "producao"])]
+        develop: bool,
+        #[arg(short = 'o', long, conflicts_with_all = ["develop", "stress", "producao"])]
+        homolog: bool,
+        #[arg(short, long, conflicts_with_all = ["homolog", "develop", "producao"])]
+        stress: bool,
+        #[arg(short, long, conflicts_with_all = ["homolog", "stress", "develop"])]
+        producao: bool,
+        repo: Option<String>
+    },
+    /// Lista os commits em stash para o repositório
+    #[command(name = "sl")]
+    StashList {},
+    /// Executa o stash para os arquivos alterados no repositório
+    #[command(name = "ss")]
+    StashSave {
+        /// Mantem os arquivos que encontram em stage
+        k: Option<bool>,
+        /// Mensagem para facilitar a identificação do Stash
+        #[arg(short, long)]
+        message: Option<String>,
+    },
+    /// Executa o stash apply para os arquivos alterados no repositório
+    #[command(name = "sa")]
+    StashApply {
+        /// Índice do stash desejado
+        #[arg(short, long)]
+        index: Option<i8>,
+    },
+    /// Executa o stash pop para os arquivos alterados no repositório
+    #[command(name = "sp")]
+    StashPop {
+        /// Índice do stash desejado
+        #[arg(short, long)]
+        index: Option<i8>,
+    }
+}
