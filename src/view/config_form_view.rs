@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use anyhow::{Context, Result};
-use dialoguer::Input;
+use anyhow::Result;
 use dialoguer::theme::ColorfulTheme;
+use dialoguer::Input;
+use std::path::PathBuf;
 
 use crate::domain::app_config::AppConfig;
 

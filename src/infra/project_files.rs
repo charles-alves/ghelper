@@ -1,7 +1,8 @@
-use std::fs;
 use anyhow::{Context, Result};
-use std::path::PathBuf;
 use directories::ProjectDirs;
+use std::fs;
+use std::path::PathBuf;
+
 use crate::domain::app_config::AppConfig;
 
 pub fn load_config() -> Result<AppConfig> {
@@ -18,11 +19,17 @@ pub fn workspace() -> Result<PathBuf> {
     Ok(project_dir()?.join("workspace"))
 }
 
+pub fn save_config(config: &AppConfig) -> Result<()> {
+    let config_file = project_dir()?.join("config.toml");
+    let content = toml::to_string_pretty(config)?;
+    fs::write(config_file, content)?;
+    Ok(())
+}
+
 fn project_dir() -> Result<PathBuf> {
     if let Some(proj_dir) = ProjectDirs::from("br", "acidco","ghhelper") {
         let path = proj_dir.config_dir();
         fs::create_dir_all(path).expect("Não foi possível criar o diretório de configuração");
-        println!("{:#?}", path.to_str());
         return Ok(path.to_path_buf());
     }
     Err(anyhow::Error::msg("Não foi possível localizar o diretório de configuração da aplicação"))

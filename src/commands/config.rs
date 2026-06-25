@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use anyhow::Result;
+use std::path::PathBuf;
 
 use crate::infra::project_files;
 use crate::view::config_form_view;
@@ -18,5 +18,5 @@ pub fn run(jira: &Option<String>, git: &Option<String>, workspace: &Option<Strin
     if [&jira, &git, &workspace].iter().all(|x| x.is_none()) {
         config_form_view::render(&mut config)?;
     }
-    Ok(())
+    project_files::save_config(&config)
 }
