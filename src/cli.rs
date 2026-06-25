@@ -7,7 +7,7 @@ use clap::{Parser, Subcommand};
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Option<Command>
+    pub command: Command
 }
 
 #[derive(Subcommand)]
@@ -16,7 +16,9 @@ pub enum Command {
         #[arg(short, long)]
         jira: Option<String>,
         #[arg(short, long)]
-        git: Option<String>
+        git: Option<String>,
+        #[arg(short, long)]
+        workspace: Option<String>,
     },
     /// Lista as branches existentes para o repositório selecionado
     #[command(name = "b")]
