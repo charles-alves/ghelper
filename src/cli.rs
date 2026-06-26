@@ -47,6 +47,12 @@ pub enum Command {
         /// Nome do repositório que será clonado
         repo: String
     },
+    /// Lista os projetos clonados
+    #[command(name = "pjts")]
+    Projects {
+        /// Possibilita filtrar os projetos
+        filter: Option<String>
+    },
     /// Lista as branches existentes para o repositório selecionado
     #[command(name = "b")]
     Branchs {
@@ -66,12 +72,6 @@ pub enum Command {
     InteractiveDelete {},
     /// Executa o push para o remoto, independente da branch já existir
     Up {},
-    /// Lista os projetos clonados
-    #[command(name = "pjts")]
-    Projects {
-        /// Possibilita filtrar os projetos
-        filter: Option<String>
-    },
     /// Abre o repositório no browser na tela de busca
     Search {
         /// Filtro utilizado para realizar a busca

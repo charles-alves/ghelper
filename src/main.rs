@@ -16,12 +16,12 @@ async fn main() -> Result<()> {
     match &cli.command {
         Command::Config { jira, git, workspace } => commands::config::run(jira, git, workspace)?,
         Command::Clone { repo } => commands::clo::run(repo)?,
+        Command::Projects { filter } => commands::projects::run(filter)?,
         Command::Branchs { .. } => {}
         Command::Tags { .. } => {}
         Command::InteractiveCheckout { .. } => {}
         Command::InteractiveDelete { .. } => {}
         Command::Up { .. } => {}
-        Command::Projects { .. } => {}
         Command::Search { .. } => {}
         Command::Console { .. } => {}
         Command::StashList { .. } => {}

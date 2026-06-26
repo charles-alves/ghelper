@@ -1,4 +1,4 @@
-use anyhow::{Error, Result};
+use anyhow::{bail, Result};
 use dialoguer::theme::ColorfulTheme;
 use regex::Regex;
 use std::path::PathBuf;
@@ -68,7 +68,7 @@ fn get_repo_url(project: &(String, String, bool)) -> Result<Url> {
             Ok(url)
         }
         None => {
-            return Err(Error::msg(""))
+            bail!("Não foi possível localizar a URL base para o Git nas configurações do aplicativo")
         }
     }
 }

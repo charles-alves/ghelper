@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
@@ -32,5 +32,5 @@ fn project_dir() -> Result<PathBuf> {
         fs::create_dir_all(path).expect("Não foi possível criar o diretório de configuração");
         return Ok(path.to_path_buf());
     }
-    Err(anyhow::Error::msg("Não foi possível localizar o diretório de configuração da aplicação"))
+    bail!("Não foi possível localizar o diretório de configuração da aplicação")
 }
