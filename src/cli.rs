@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(
@@ -8,6 +8,27 @@ use clap::{Parser, Subcommand};
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command
+}
+
+#[derive(Args)]
+pub struct ConsoleArgs {
+    #[arg(short, long, conflicts_with_all = ["database", "kubernates", "kafka"])]
+    pub consul: bool,
+    #[arg(short = 'b', long, conflicts_with_all = ["consul", "kubernates", "kafka"])]
+    pub database: bool,
+    #[arg(short, long, conflicts_with_all = ["database", "consul", "kafka"])]
+    pub kubernates: bool,
+    #[arg(short = 't', long, conflicts_with_all = ["database", "kubernates", "consul"])]
+    pub kafka: bool,
+    #[arg(short, long, conflicts_with_all = ["homolog", "stress", "producao"])]
+    pub develop: bool,
+    #[arg(short = 'o', long, conflicts_with_all = ["develop", "stress", "producao"])]
+    pub homolog: bool,
+    #[arg(short, long, conflicts_with_all = ["homolog", "develop", "producao"])]
+    pub stress: bool,
+    #[arg(short, long, conflicts_with_all = ["homolog", "stress", "develop"])]
+    pub producao: bool,
+    pub repo: Option<String>
 }
 
 #[derive(Subcommand)]
@@ -57,25 +78,7 @@ pub enum Command {
         filter: Option<String>
     },
     /// Abre o devconsole para um projeto e páginas especificadas via parâmetros
-    Console {
-        #[arg(short, long, conflicts_with_all = ["database", "kubernates", "kafka"])]
-        consul: bool,
-        #[arg(short = 'b', long, conflicts_with_all = ["consul", "kubernates", "kafka"])]
-        database: bool,
-        #[arg(short, long, conflicts_with_all = ["database", "consul", "kafka"])]
-        kubernates: bool,
-        #[arg(short = 't', long, conflicts_with_all = ["database", "kubernates", "consul"])]
-        kafka: bool,
-        #[arg(short, long, conflicts_with_all = ["homolog", "stress", "producao"])]
-        develop: bool,
-        #[arg(short = 'o', long, conflicts_with_all = ["develop", "stress", "producao"])]
-        homolog: bool,
-        #[arg(short, long, conflicts_with_all = ["homolog", "develop", "producao"])]
-        stress: bool,
-        #[arg(short, long, conflicts_with_all = ["homolog", "stress", "develop"])]
-        producao: bool,
-        repo: Option<String>
-    },
+    Console(ConsoleArgs),
     /// Lista os commits em stash para o repositório
     #[command(name = "sl")]
     StashList {},
