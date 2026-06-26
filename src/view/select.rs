@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Select;
 
-pub fn render(prompt: &str, itens: Vec<String>, default: Option<usize>, theme: &ColorfulTheme) -> Result<usize> {
+pub fn render(prompt: &str, itens: &Vec<String>, default: Option<usize>, theme: &ColorfulTheme) -> Result<usize> {
     let mut confirm = Select::with_theme(theme)
         .with_prompt(prompt);
     if let Some(default) = default {
