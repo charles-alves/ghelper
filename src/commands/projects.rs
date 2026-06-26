@@ -15,8 +15,6 @@ pub(crate) fn run(filter: &Option<String>) -> Result<()> {
 
     };
     let selected = select::render("Selecione o projeto desejado", &projects, None, &ColorfulTheme::default())?;
-    if let Some(project) = projects.get(selected) {
-        let _ = Clipboard::new()?.set_text(project);
-    }
+    Clipboard::new()?.set_text(selected)?;
     Ok(())
 }
