@@ -35,11 +35,11 @@ pub struct ConsoleArgs {
 pub enum Command {
     Config {
         #[arg(short, long)]
-        jira: Option<String>,
+        jira: Option<Option<String>>,
         #[arg(short, long)]
-        git: Option<String>,
+        git: Option<Option<String>>,
         #[arg(short, long)]
-        workspace: Option<String>,
+        workspace: Option<Option<String>>,
     },
     /// Clona um novo repositório ao workspace
     #[command(name = "clo")]
