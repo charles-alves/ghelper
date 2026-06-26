@@ -20,6 +20,12 @@ pub enum Command {
         #[arg(short, long)]
         workspace: Option<String>,
     },
+    /// Clona um novo repositório ao workspace
+    #[command(name = "clo")]
+    Clone {
+        /// Nome do repositório que será clonado
+        repo: String
+    },
     /// Lista as branches existentes para o repositório selecionado
     #[command(name = "b")]
     Branchs {
@@ -29,12 +35,6 @@ pub enum Command {
     #[command(name = "t")]
     Tags {
         repo: Option<String>
-    },
-    /// Clona um novo repositório ao workspace
-    #[command(name = "clo")]
-    Clone {
-        /// Nome do repositório que será clonado
-        repo: String
     },
     /// Realiza o checkout interativo em uma branch do repositório
     /// caso a branch exista somente no remoto ela será criada localmente

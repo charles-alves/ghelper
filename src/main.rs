@@ -4,10 +4,10 @@ mod infra;
 mod domain;
 pub mod view;
 
+use crate::cli::Command;
 use anyhow::Result;
 use clap::Parser;
 use cli::Cli;
-use crate::cli::Command;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -15,9 +15,9 @@ async fn main() -> Result<()> {
 
     match &cli.command {
         Command::Config { jira, git, workspace } => commands::config::run(jira, git, workspace)?,
+        Command::Clone { repo } => commands::clo::run(repo)?,
         Command::Branchs { .. } => {}
         Command::Tags { .. } => {}
-        Command::Clone { .. } => {}
         Command::InteractiveCheckout { .. } => {}
         Command::InteractiveDelete { .. } => {}
         Command::Up { .. } => {}
