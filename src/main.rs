@@ -17,6 +17,7 @@ async fn main() -> Result<()> {
         Command::Config { jira, git, workspace } => commands::config::run(jira, git, workspace)?,
         Command::Clone { repo } => commands::clo::run(repo)?,
         Command::Projects { filter } => commands::projects::run(filter)?,
+        Command::Open { update, filter } => commands::open::run(update, filter)?,
         Command::Branchs { .. } => {}
         Command::Tags { .. } => {}
         Command::InteractiveCheckout { .. } => {}

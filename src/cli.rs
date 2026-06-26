@@ -53,6 +53,12 @@ pub enum Command {
         /// Possibilita filtrar os projetos
         filter: Option<String>
     },
+    /// Lista os projetos existentes localmente e abre utilizando a IDE configurada no sistema
+    Open {
+        #[arg(short, long)]
+        update: bool,
+        filter: Option<String>
+    },
     /// Lista as branches existentes para o repositório selecionado
     #[command(name = "b")]
     Branchs {
