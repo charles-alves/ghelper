@@ -1,23 +1,31 @@
-use crate::infra::{projects, project_files};
-use crate::view::mult_select;
 use crate::commands::sync;
+use crate::infra::{project_files, projects};
+use crate::os;
+use crate::view::mult_select;
 
 use anyhow::Result;
 use dialoguer::theme::ColorfulTheme;
-use std::process::Command;
 
 pub(crate) fn run(update: &bool, filter: &Option<String>) -> Result<()> {
     let selected = select_projects(filter);
     if *update {
         sync_projects(&selected);
     }
-    Command::new("bash").current_dir(project_files::workspace()?.join(&selected[0])).status()?;
+    for project in &selected {
+        let config = project_files::load_config()?;
+        let command = format!("{} \"{:#?}\" > /dev/null 2>&1 &", config.ide_executable.as_ref().unwrap(), config.workspace.join(project));
+        os::target::execute(&command)?
+    }
     Ok(())
 }
 
 fn select_projects(filter: &Option<String>) -> Vec<String> {
     let projects = projects::list_filter(filter)
         .expect("Não foi possível listar projetos do Workspace");
+    if projects.is_empty() {
+        println!("Não foram encontrados projetos para serem abertos");
+        return vec![];
+    }
     mult_select::render(
         "Selecione os projetos que deseja abrir",
         &projects,
