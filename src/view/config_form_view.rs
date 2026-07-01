@@ -13,5 +13,7 @@ pub fn render(app_config: &mut AppConfig) -> Result<()> {
     app_config.git = input_git;
     let input_workspace = input::render("Diretório base para armazenamento dos projetos", app_config.workspace.to_str(), &theme)?;
     app_config.workspace = input_workspace.map(PathBuf::from).unwrap();
+    let input_ide = input::render("Digite o comando para executar a IDE padrão", app_config.ide_executable.as_deref(), &theme)?;
+    app_config.ide_executable = input_ide;
     Ok(())
 }

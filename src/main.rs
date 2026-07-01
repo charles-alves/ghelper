@@ -3,6 +3,7 @@ mod commands;
 mod infra;
 mod domain;
 pub mod view;
+pub mod os;
 
 use crate::cli::Command;
 use anyhow::Result;
@@ -14,7 +15,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Command::Config { jira, git, workspace } => commands::config::run(jira, git, workspace)?,
+        Command::Config(args) => commands::config::run(args)?,
         Command::Clone { repo } => commands::clo::run(repo)?,
         Command::Projects { filter } => commands::projects::run(filter)?,
         Command::Open { update, filter } => commands::open::run(update, filter)?,

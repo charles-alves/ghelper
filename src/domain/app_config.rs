@@ -7,6 +7,7 @@ pub struct AppConfig {
     pub jira: Option<String>,
     pub git: Option<String>,
     pub workspace: PathBuf,
+    pub ide_executable: Option<String>
 }
 
 impl Default for AppConfig {
@@ -17,6 +18,7 @@ impl Default for AppConfig {
             jira: None,
             git: None,
             workspace,
+            ide_executable: None
         }
     }
 }
