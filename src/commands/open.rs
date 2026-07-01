@@ -1,5 +1,5 @@
 use crate::commands::sync;
-use crate::infra::{project_files, projects};
+use crate::infra::projects;
 use crate::os;
 use crate::view::mult_select;
 
@@ -12,9 +12,7 @@ pub(crate) fn run(update: &bool, filter: &Option<String>) -> Result<()> {
         sync_projects(&selected);
     }
     for project in &selected {
-        let config = project_files::load_config()?;
-        let command = format!("{} \"{:#?}\" > /dev/null 2>&1 &", config.ide_executable.as_ref().unwrap(), config.workspace.join(project));
-        os::target::execute(&command)?
+        os::open_ide(&project)?;
     }
     Ok(())
 }
