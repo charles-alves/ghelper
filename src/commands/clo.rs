@@ -7,6 +7,7 @@ use url::Url;
 
 use crate::infra::project_files;
 use crate::view::confirm;
+use crate::os;
 
 pub(crate) fn run(repo: &str) -> Result<()> {
     let project = match get_repo_values(repo)? {
@@ -30,7 +31,7 @@ pub(crate) fn run(repo: &str) -> Result<()> {
             clone(&url.as_str(), &group_dir)
         }
     }
-    Ok(())
+    os::open_ide(&format!("{}/{}", &project.0, &project.1))
 }
 
 fn get_repo_values(repo: &str) -> Result<Option<(String, String, bool)>> {
