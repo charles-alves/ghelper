@@ -77,12 +77,11 @@ fn execute_remote_branch_list() -> ExecOutput {
 }
 
 fn get_match_remote(output: String, branch_name: &str) -> Vec<String> {
-    let branch_regx = Regex::new(format!(r"^\s\s(\w)/{}$", branch_name).as_str())
+    let branch_regx = Regex::new(format!(r"^\s\s(.+?)/{}$", branch_name).as_str())
         .expect("Falha ao criar regex para branches locais");
-    let remote_branches = output.lines()
+    output.lines()
         .filter_map(|b| branch_regx.captures(b).map(|m| m[1].to_string()))
-        .collect::<Vec<String>>();
-    remote_branches
+        .collect()
 }
 
 fn select_remote(remote_branches: &Vec<String>) -> String {
