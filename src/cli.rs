@@ -57,7 +57,10 @@ pub enum Command {
     #[command(name = "ci")]
     InteractiveCheckout,
     /// Executa o push para o remoto, independente da branch já existir
-    Up,
+    Up {
+        #[arg(short, long)]
+        force: bool,
+    },
     /// Realiza o delete interativo de branchs locais do repositório
     #[command(name = "di")]
     InteractiveDelete {},
