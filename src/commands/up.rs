@@ -44,7 +44,6 @@ fn truncate_to_remote(remote: &str, force: bool) -> Result<()> {
     let mut command = Command::new("git");
     command.arg("push")
         .arg("-u")
-        .arg(if force { "-f" } else { "" })
         .arg(remote)
         .arg(git::pwd());
     if force {
