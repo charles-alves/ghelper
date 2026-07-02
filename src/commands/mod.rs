@@ -6,3 +6,4 @@ pub mod sync;
 pub mod interactive_checkout;
 pub mod checkout;
 pub mod up;
+pub mod interactive_delete;
