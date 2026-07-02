@@ -71,16 +71,6 @@ pub enum Command {
         update: bool,
         filter: Option<String>
     },
-    /// Lista as branches existentes para o repositório selecionado
-    #[command(name = "b")]
-    Branchs {
-        repo: Option<String>
-    },
-    /// Lista as branches existentes para o repositório em ordem decrescente
-    #[command(name = "t")]
-    Tags {
-        repo: Option<String>
-    },
     /// Realiza o checkout interativo em uma branch do repositório
     /// caso a branch exista somente no remoto ela será criada localmente
     #[command(name = "ci")]
