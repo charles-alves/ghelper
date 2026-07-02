@@ -1,4 +1,12 @@
+pub mod console_args;
+pub mod config_args;
+pub mod interactive_checkout_args;
+
 use clap::{Args, Parser, Subcommand};
+
+use crate::cli::config_args::ConfigArgs;
+use crate::cli::console_args::ConsoleArgs;
+use crate::cli::interactive_checkout_args::InteractiveCheckoutArgs;
 
 #[derive(Parser)]
 #[command(
@@ -8,46 +16,6 @@ use clap::{Args, Parser, Subcommand};
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command
-}
-
-#[derive(Args)]
-pub struct ConsoleArgs {
-    #[arg(short, long, conflicts_with_all = ["database", "kubernates", "kafka"])]
-    pub consul: bool,
-    #[arg(short = 'b', long, conflicts_with_all = ["consul", "kubernates", "kafka"])]
-    pub database: bool,
-    #[arg(short, long, conflicts_with_all = ["database", "consul", "kafka"])]
-    pub kubernates: bool,
-    #[arg(short = 't', long, conflicts_with_all = ["database", "kubernates", "consul"])]
-    pub kafka: bool,
-    #[arg(short, long, conflicts_with_all = ["homolog", "stress", "producao"])]
-    pub develop: bool,
-    #[arg(short = 'o', long, conflicts_with_all = ["develop", "stress", "producao"])]
-    pub homolog: bool,
-    #[arg(short, long, conflicts_with_all = ["homolog", "develop", "producao"])]
-    pub stress: bool,
-    #[arg(short, long, conflicts_with_all = ["homolog", "stress", "develop"])]
-    pub producao: bool,
-    pub repo: Option<String>
-}
-
-#[derive(Args)]
-pub struct ConfigArgs {
-    #[arg(short, long)]
-    pub jira: Option<Option<String>>,
-    #[arg(short, long)]
-    pub git: Option<Option<String>>,
-    #[arg(short, long)]
-    pub workspace: Option<Option<String>>,
-    #[arg(short, long)]
-    pub ide: Option<Option<String>>,
-}
-
-impl ConfigArgs {
-    
-    pub fn is_empty(&self) -> bool {
-        self.jira.is_none() && self.git.is_none() && self.workspace.is_none() && self.ide.is_none()
-    }
 }
 
 #[derive(Subcommand)]
@@ -71,20 +39,10 @@ pub enum Command {
         update: bool,
         filter: Option<String>
     },
-    /// Lista as branches existentes para o repositório selecionado
-    #[command(name = "b")]
-    Branchs {
-        repo: Option<String>
-    },
-    /// Lista as branches existentes para o repositório em ordem decrescente
-    #[command(name = "t")]
-    Tags {
-        repo: Option<String>
-    },
     /// Realiza o checkout interativo em uma branch do repositório
     /// caso a branch exista somente no remoto ela será criada localmente
     #[command(name = "ci")]
-    InteractiveCheckout {},
+    InteractiveCheckout(InteractiveCheckoutArgs),
     /// Realiza o delete interativo de branchs locais do repositório
     #[command(name = "di")]
     InteractiveDelete {},
