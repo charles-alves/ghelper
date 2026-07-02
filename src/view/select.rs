@@ -8,7 +8,7 @@ pub fn render(prompt: &str, itens: &Vec<String>, default: Option<&str>, theme: &
         .with_prompt(prompt)
         .default(index.unwrap_or(0))
         .items(itens)
-        .max_length(2)
+        .max_length(15)
         .interact()
         .context("Não foi possível confimar o resultado")?;
     Ok(itens[selected_index].to_string())

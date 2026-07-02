@@ -1,6 +1,7 @@
 use crate::os;
 use crate::os::exec_output::ExecOutput::{Failure, Success};
 use crate::view::select;
+use crate::infra::git;
 
 use anyhow::{bail, Result};
 use regex::Regex;
@@ -29,7 +30,7 @@ pub(crate) fn run() -> Result<()> {
     };
     let selected_branch = select::render("Selecione a branch que deseja realizar checkout", &output, current_branch.as_deref(), &ColorfulTheme::default())?;
     if current_branch.as_deref() != Some(&selected_branch) {
-        os::execute(&format!("git checkout {}", &selected_branch), None)?;
+        git::checkout(&selected_branch);
     }
     Ok(())
 }
