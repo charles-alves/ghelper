@@ -1,6 +1,7 @@
-use crate::cli::ConfigArgs;
+use crate::cli::config_args::ConfigArgs;
 use crate::infra::project_files;
 use crate::view::config_form_view;
+
 use anyhow::Result;
 use std::path::PathBuf;
 
