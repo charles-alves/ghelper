@@ -56,11 +56,14 @@ pub enum Command {
     /// caso a branch exista somente no remoto ela será criada localmente
     #[command(name = "ci")]
     InteractiveCheckout,
+    /// Executa o push para o remoto, independente da branch já existir
+    Up {
+        #[arg(short, long)]
+        force: bool,
+    },
     /// Realiza o delete interativo de branchs locais do repositório
     #[command(name = "di")]
     InteractiveDelete {},
-    /// Executa o push para o remoto, independente da branch já existir
-    Up {},
     /// Abre o repositório no browser na tela de busca
     Search {
         /// Filtro utilizado para realizar a busca
