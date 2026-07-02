@@ -1,6 +1,6 @@
 use clap::Args;
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ConsoleArgs {
     #[arg(short, long, conflicts_with_all = ["database", "kubernates", "kafka"])]
     pub consul: bool,

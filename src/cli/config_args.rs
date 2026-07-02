@@ -1,6 +1,6 @@
 use clap::Args;
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ConfigArgs {
     #[arg(short, long)]
     pub jira: Option<Option<String>>,
