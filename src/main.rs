@@ -19,7 +19,7 @@ async fn main() -> Result<()> {
         Command::Clone { repo } => commands::clo::run(repo)?,
         Command::Projects { filter } => commands::projects::run(filter)?,
         Command::Open { update, filter } => commands::open::run(update, filter)?,
-        Command::InteractiveCheckout { .. } => {}
+        Command::InteractiveCheckout => commands::interactive_checkout::run()?,
         Command::InteractiveDelete { .. } => {}
         Command::Up { .. } => {}
         Command::Search { .. } => {}

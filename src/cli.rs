@@ -1,12 +1,10 @@
 pub mod console_args;
 pub mod config_args;
-pub mod interactive_checkout_args;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 
 use crate::cli::config_args::ConfigArgs;
 use crate::cli::console_args::ConsoleArgs;
-use crate::cli::interactive_checkout_args::InteractiveCheckoutArgs;
 
 #[derive(Parser)]
 #[command(
@@ -42,7 +40,7 @@ pub enum Command {
     /// Realiza o checkout interativo em uma branch do repositório
     /// caso a branch exista somente no remoto ela será criada localmente
     #[command(name = "ci")]
-    InteractiveCheckout(InteractiveCheckoutArgs),
+    InteractiveCheckout,
     /// Realiza o delete interativo de branchs locais do repositório
     #[command(name = "di")]
     InteractiveDelete {},

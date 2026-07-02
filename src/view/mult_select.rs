@@ -1,11 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use dialoguer::MultiSelect;
 use dialoguer::theme::ColorfulTheme;
 
 pub fn render(
     prompt: &str,
     itens: &Vec<String>,
-    default: Vec<String>,
+    default: &Vec<String>,
     theme: &ColorfulTheme,
 ) -> Result<Vec<String>> {
     let mut confirm = MultiSelect::with_theme(theme).with_prompt(prompt);

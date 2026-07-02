@@ -27,7 +27,7 @@ fn select_projects(filter: &Option<String>) -> Vec<String> {
     mult_select::render(
         "Selecione os projetos que deseja abrir",
         &projects,
-        vec![],
+        &vec![],
         &ColorfulTheme::default(),
     )
         .expect("Não foi possível finalizar a seleção de projetos")
