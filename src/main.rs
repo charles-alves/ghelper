@@ -14,12 +14,15 @@ use cli::Cli;
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    // println!("{:#?}", &cli.command);
     match &cli.command {
         Command::Config(args) => commands::config::run(args)?,
         Command::Clone { repo } => commands::clo::run(repo)?,
         Command::Projects { filter } => commands::projects::run(filter)?,
         Command::Open { update, filter } => commands::open::run(update, filter)?,
-        Command::InteractiveCheckout { .. } => {}
+        Command::Checkout { branch_type, branch, native_args } =>
+            commands::checkout::run(branch_type.value(), branch.as_deref(), native_args)?,
+        Command::InteractiveCheckout => commands::interactive_checkout::run()?,
         Command::InteractiveDelete { .. } => {}
         Command::Up { .. } => {}
         Command::Search { .. } => {}

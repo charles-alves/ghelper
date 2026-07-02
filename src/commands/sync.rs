@@ -1,5 +1,5 @@
 use anyhow::Result;
 
-pub fn run(project: Option<&str>) -> Result<()> {
+pub fn run(_project: Option<&str>) -> Result<()> {
     Ok(())
 }

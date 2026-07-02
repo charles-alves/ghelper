@@ -1,0 +1,219 @@
+name: Automated Release & RC
+
+on:
+  push:
+    branches:
+      - 'release!/**'
+      - 'release/**'
+      - 'hotfix/**'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  determine_version:
+    # Executa se for push nas branches de trabalho OU se for PR mergeado na main
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    outputs:
+      next_version: ${{ steps.semver.outputs.next_version }}
+      is_rc: ${{ steps.semver.outputs.is_rc }}
+      should_release: ${{ steps.semver.outputs.should_release }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate Next Version
+        id: semver
+        run: |
+          # 1. Obter a última tag estável (ignora tags com -RC)
+          LATEST_STABLE_TAG=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          if [ -z "$LATEST_STABLE_TAG" ]; then
+            LATEST_STABLE_TAG="0.0.0"
+          fi
+          VERSION=$LATEST_STABLE_TAG
+          
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          
+          # 2. Identificar a branch atual
+          if [ "${{ github.event_name }}" = "push" ]; then
+            BRANCH_NAME="${{ github.ref_name }}"
+            IS_RC="true"
+          else
+            BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+            IS_RC="false"
+          fi
+          
+          echo "Branch detectada: $BRANCH_NAME"
+          echo "Última versão estável: $VERSION"
+          
+          SHOULD_RELEASE="true"
+          
+          # 3. Calcular a base da nova versão
+          if [[ "$BRANCH_NAME" == release\!/* ]]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [[ "$BRANCH_NAME" == release/* ]]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          elif [[ "$BRANCH_NAME" == hotfix/* ]]; then
+            PATCH=$((PATCH + 1))
+          else
+            echo "Branch fora do padrão de release. Pulando."
+            SHOULD_RELEASE="false"
+          fi
+          
+          BASE_VERSION="$MAJOR.$MINOR.$PATCH"
+          
+          # 4. Se for push, calcular o sufixo incremental -RCX
+          if [ "$IS_RC" = "true" ] && [ "$SHOULD_RELEASE" = "true" ]; then
+            # Procura a maior tag RC existente para essa base específica (ex: 1.0.0-RC2)
+            LAST_RC_NUMBER=$(git tag -l "$BASE_VERSION-RC*" | sed "s/$BASE_VERSION-RC//" | sort -n | tail -n1)
+            
+            if [ -z "$LAST_RC_NUMBER" ]; then
+              NEXT_RC_NUMBER=1
+            else
+              NEXT_RC_NUMBER=$((LAST_RC_NUMBER + 1))
+            fi
+            FINAL_VERSION="$BASE_VERSION-RC$NEXT_RC_NUMBER"
+          else
+            FINAL_VERSION="$BASE_VERSION"
+          fi
+          
+          echo "Versão final calculada: $FINAL_VERSION"
+          
+          echo "next_version=$FINAL_VERSION" >> $GITHUB_OUTPUT
+          echo "is_rc=$IS_RC" >> $GITHUB_OUTPUT
+          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+
+  build_and_release:
+    needs: determine_version
+    if: needs.determine_version.outputs.should_release == 'true'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: ghelper-linux.tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: ghelper-windows.zip
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+
+      - name: Build Binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package Artifacts (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir dist
+          cp target/${{ matrix.target }}/release/ghelper dist/gh
+          cd dist
+          tar -czf ../${{ matrix.artifact_name }} gh
+          cd ..
+
+      - name: Package Artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir dist
+          copy target\${{ matrix.target }}\release\ghelper.exe dist\gh.exe
+          powershell Compress-Archive -Path dist\gh.exe -DestinationPath \${{ matrix.artifact_name }}
+
+      - name: Upload Artifacts to Job
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-package
+          path: ${{ matrix.artifact_name }}
+
+  create_github_release:
+    needs: [determine_version, build_and_release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Structure Assets & Create Installers
+        run: |
+          mkdir release_assets
+          find artifacts/ -type f -exec cp {} release_assets/ \;
+          
+          VERSION="${{ needs.determine_version.outputs.next_version }}"
+          REPO="${{ github.repository }}"
+          
+          # 1. SCRIPT DE INSTALAÇÃO PARA LINUX (install.sh)
+          cat << EOF > release_assets/install.sh
+          #!/bin/sh
+          set -e
+          echo "Instalando ghelper (gh) v\$VERSION..."
+          URL="https://github.com/\$REPO/releases/download/\$VERSION/ghelper-linux.tar.gz"
+          curl -L "\$URL" -o ghelper.tar.gz
+          tar -xzf ghelper.tar.gz
+          sudo mv gh /usr/local/bin/gh
+          rm ghelper.tar.gz
+          echo "Instalação concluída! Digite 'gh' para começar."
+          EOF
+          
+          # 2. SCRIPT DE INSTALAÇÃO PARA WINDOWS (install.ps1)
+          cat << EOF > release_assets/install.ps1
+          Param()
+          Write-Host "Instalando ghelper (gh) v\$VERSION para Windows..."
+          \$Url = "https://github.com/\$REPO/releases/download/\$VERSION/ghelper-windows.zip"
+          \$ZipFile = "\$env:TEMP\ghelper.zip"
+          \$TargetDir = "\$env:USERPROFILE\.ghelper"
+          
+          if (!(Test-Path \$TargetDir)) { New-Item -ItemType Directory -Path \$TargetDir }
+          Invoke-WebRequest -Uri \$Url -OutFile \$ZipFile
+          Expand-Archive -Path \$ZipFile -DestinationPath \$TargetDir -Force
+          Remove-Item \$ZipFile
+          
+          \$UserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+          if (\$UserPath -notlike "*\$TargetDir*") {
+              [Environment]::SetEnvironmentVariable("PATH", "\$UserPath;\$TargetDir", "User")
+              Write-Host "Diretório adicionado ao PATH do usuário."
+          }
+          Write-Host "Instalação concluída! Reinicie o seu terminal e digite 'gh'."
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.determine_version.outputs.next_version }}
+          name: Release ${{ needs.determine_version.outputs.next_version }}
+          body: |
+            ## 🚀 Como instalar o `ghelper` no seu terminal (comando: `gh`):
+            
+            ### Linux
+            ```bash
+            curl -fsSL [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.sh | sh
+            ```
+            
+            ### Windows (PowerShell)
+            ```powershell
+            irm [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
+            ```
+          # Se for RC, marca a release do GitHub como "Pre-release" (Sinalização visual amarela no GitHub)
+          prerelease: ${{ needs.determine_version.outputs.is_rc == 'true' }}
+          draft: false
+          files: release_assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
