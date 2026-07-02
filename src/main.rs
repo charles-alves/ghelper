@@ -23,8 +23,8 @@ async fn main() -> Result<()> {
         Command::Checkout { branch_type, branch, native_args } =>
             commands::checkout::run(branch_type.value(), branch.as_deref(), native_args)?,
         Command::InteractiveCheckout => commands::interactive_checkout::run()?,
+        Command::Up => commands::up::run()?,
         Command::InteractiveDelete { .. } => {}
-        Command::Up { .. } => {}
         Command::Search { .. } => {}
         Command::Console { .. } => {}
         Command::StashList { .. } => {}

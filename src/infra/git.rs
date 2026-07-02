@@ -30,6 +30,15 @@ pub fn checkout(branch_name: &str) {
         .expect(&format!("Não foi possível finalizar o checkout para branch {}", branch_name));
 }
 
+pub fn pwd() -> String {
+    let branch_output = os::execute("git branch --show-current", None)
+        .expect("Não foi possível recuperar o nome da branch atual");
+    match branch_output {
+        Success(output) => output.trim().to_string(),
+        ExecOutput::Failure(outerr) => panic!("{outerr}")
+    }
+}
+
 pub fn exists_branch(branch_name: &str) -> BranchLocation {
     if exists_local(branch_name) {
         return BranchLocation::Local
