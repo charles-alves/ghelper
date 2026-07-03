@@ -142,7 +142,7 @@ jobs:
           path: ${{ matrix.artifact_name }}
 
   create_github_release:
-    needs: [determine_version, build_and_release]
+    needs: [ determine_version, build_and_release ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -152,21 +152,23 @@ jobs:
         with:
           path: artifacts
 
+      # Etapa corrigida para estruturar os instaladores sem quebrar as URLs
       - name: Structure Assets & Create Installers
         run: |
           mkdir release_assets
           find artifacts/ -type f -exec cp {} release_assets/ \;
           
-          VERSION="${{ needs.determine_version.outputs.next_version }}"
-          REPO="${{ github.repository }}"
+          # Injeta as variáveis do Actions em variáveis de ambiente do shell para o script ler com segurança
+          export ACTION_VERSION="${{ needs.determine_version.outputs.next_version }}"
+          export ACTION_REPO="${{ github.repository }}"
           
           # 1. SCRIPT DE INSTALAÇÃO PARA LINUX (install.sh)
-          cat << EOF > release_assets/install.sh
+          cat << 'EOF' > release_assets/install.sh
           #!/bin/sh
           set -e
-          echo "Instalando ghelper (gh) v\$VERSION..."
-          URL="https://github.com/\$REPO/releases/download/\$VERSION/ghelper-linux.tar.gz"
-          curl -L "\$URL" -o ghelper.tar.gz
+          echo "Instalando ghelper (gh) v$ACTION_VERSION..."
+          URL="https://github.com/$ACTION_REPO/releases/download/$ACTION_VERSION/ghelper-linux.tar.gz"
+          curl -L "$URL" -o ghelper.tar.gz
           tar -xzf ghelper.tar.gz
           sudo mv gh /usr/local/bin/gh
           rm ghelper.tar.gz
@@ -174,21 +176,21 @@ jobs:
           EOF
           
           # 2. SCRIPT DE INSTALAÇÃO PARA WINDOWS (install.ps1)
-          cat << EOF > release_assets/install.ps1
+          cat << 'EOF' > release_assets/install.ps1
           Param()
-          Write-Host "Instalando ghelper (gh) v\$VERSION para Windows..."
-          \$Url = "https://github.com/\$REPO/releases/download/\$VERSION/ghelper-windows.zip"
-          \$ZipFile = "\$env:TEMP\ghelper.zip"
-          \$TargetDir = "\$env:USERPROFILE\.ghelper"
+          Write-Host "Instalando ghelper (gh) v$ACTION_VERSION para Windows..."
+          $Url = "https://github.com/$ACTION_REPO/releases/download/$ACTION_VERSION/ghelper-windows.zip"
+          $ZipFile = "$env:TEMP\ghelper.zip"
+          $TargetDir = "$env:USERPROFILE\.ghelper"
           
-          if (!(Test-Path \$TargetDir)) { New-Item -ItemType Directory -Path \$TargetDir }
-          Invoke-WebRequest -Uri \$Url -OutFile \$ZipFile
-          Expand-Archive -Path \$ZipFile -DestinationPath \$TargetDir -Force
-          Remove-Item \$ZipFile
+          if (!(Test-Path $TargetDir)) { New-Item -ItemType Directory -Path $TargetDir }
+          Invoke-WebRequest -Uri $Url -OutFile $ZipFile
+          Expand-Archive -Path $ZipFile -DestinationPath $TargetDir -Force
+          Remove-Item $ZipFile
           
-          \$UserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-          if (\$UserPath -notlike "*\$TargetDir*") {
-              [Environment]::SetEnvironmentVariable("PATH", "\$UserPath;\$TargetDir", "User")
+          $UserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+          if ($UserPath -notlike "*$TargetDir*") {
+              [Environment]::SetEnvironmentVariable("PATH", "$UserPath;$TargetDir", "User")
               Write-Host "Diretório adicionado ao PATH do usuário."
           }
           Write-Host "Instalação concluída! Reinicie o seu terminal e digite 'gh'."

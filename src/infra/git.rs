@@ -39,6 +39,18 @@ pub fn pwd() -> String {
     }
 }
 
+pub fn local_branches() -> Vec<String> {
+    let result = os::execute("git branch --format \"%(refname:short)\"", None)
+        .expect("Não foi possível identificar branches no diretório atual");
+    if let Success(output) = result {
+        output.lines()
+            .map(String::from)
+            .collect()
+    } else {
+        vec![]
+    }
+}
+
 pub fn exists_branch(branch_name: &str) -> BranchLocation {
     if exists_local(branch_name) {
         return BranchLocation::Local

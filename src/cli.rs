@@ -63,7 +63,7 @@ pub enum Command {
     },
     /// Realiza o delete interativo de branchs locais do repositório
     #[command(name = "di")]
-    InteractiveDelete {},
+    InteractiveDelete,
     /// Abre o repositório no browser na tela de busca
     Search {
         /// Filtro utilizado para realizar a busca
