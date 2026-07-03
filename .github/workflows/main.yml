@@ -11,11 +11,21 @@ on:
     branches:
       - main
 
+# Evita race conditions ao gerar tags simultâneas
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   determine_version:
-    # Executa se for push nas branches de trabalho OU se for PR mergeado na main
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       next_version: ${{ steps.semver.outputs.next_version }}
       is_rc: ${{ steps.semver.outputs.is_rc }}
@@ -25,6 +35,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Fetch all tags explicitly
+        run: git fetch --tags --force
 
       - name: Calculate Next Version
         id: semver
@@ -103,6 +116,8 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_name: ghelper-windows.zip
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -115,6 +130,8 @@ jobs:
 
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build Binary
         run: cargo build --release --target ${{ matrix.target }}
@@ -130,16 +147,18 @@ jobs:
 
       - name: Package Artifacts (Windows)
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          mkdir dist
-          copy target\${{ matrix.target }}\release\ghelper.exe dist\gh.exe
-          powershell Compress-Archive -Path dist\gh.exe -DestinationPath \${{ matrix.artifact_name }}
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item "target\${{ matrix.target }}\release\ghelper.exe" -Destination "dist\gh.exe"
+          Compress-Archive -Path "dist\gh.exe" -DestinationPath "${{ matrix.artifact_name }}" -Force
 
       - name: Upload Artifacts to Job
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-package
           path: ${{ matrix.artifact_name }}
+          retention-days: 1
 
   create_github_release:
     needs: [ determine_version, build_and_release ]
@@ -158,16 +177,12 @@ jobs:
           mkdir release_assets
           find artifacts/ -type f -exec cp {} release_assets/ \;
           
-          # Injeta as variáveis do Actions em variáveis de ambiente do shell para o script ler com segurança
-          export ACTION_VERSION="${{ needs.determine_version.outputs.next_version }}"
-          export ACTION_REPO="${{ github.repository }}"
-          
-          # 1. SCRIPT DE INSTALAÇÃO PARA LINUX (install.sh)
+          # 1. CRIAR O SCRIPT DO LINUX USANDO MARCADORES LITERAIS
           cat << 'EOF' > release_assets/install.sh
           #!/bin/sh
           set -e
-          echo "Instalando ghelper (gh) v$ACTION_VERSION..."
-          URL="https://github.com/$ACTION_REPO/releases/download/$ACTION_VERSION/ghelper-linux.tar.gz"
+          echo "Instalando ghelper (gh) v__VERSION__..."
+          URL="https://github.com/__REPO__/releases/download/__VERSION__/ghelper-linux.tar.gz"
           curl -L "$URL" -o ghelper.tar.gz
           tar -xzf ghelper.tar.gz
           sudo mv gh /usr/local/bin/gh
@@ -175,11 +190,11 @@ jobs:
           echo "Instalação concluída! Digite 'gh' para começar."
           EOF
           
-          # 2. SCRIPT DE INSTALAÇÃO PARA WINDOWS (install.ps1)
+          # 2. CRIAR O SCRIPT DO WINDOWS USANDO MARCADORES LITERAIS
           cat << 'EOF' > release_assets/install.ps1
           Param()
-          Write-Host "Instalando ghelper (gh) v$ACTION_VERSION para Windows..."
-          $Url = "https://github.com/$ACTION_REPO/releases/download/$ACTION_VERSION/ghelper-windows.zip"
+          Write-Host "Instalando ghelper (gh) v__VERSION__ para Windows..."
+          $Url = "https://github.com/__REPO__/releases/download/__VERSION__/ghelper-windows.zip"
           $ZipFile = "$env:TEMP\ghelper.zip"
           $TargetDir = "$env:USERPROFILE\.ghelper"
           
@@ -195,6 +210,13 @@ jobs:
           }
           Write-Host "Instalação concluída! Reinicie o seu terminal e digite 'gh'."
           EOF
+          
+          # 3. SUBSTITUIR OS MARCADORES COM OS VALORES REAIS DO ACTIONS
+          sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/install.sh
+          sed -i "s|__VERSION__|${{ needs.determine_version.outputs.next_version }}|g" release_assets/install.sh
+          
+          sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/assets/install.ps1 2>/dev/null || sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/install.ps1
+          sed -i "s|__VERSION__|${{ needs.determine_version.outputs.next_version }}|g" release_assets/install.ps1
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -205,15 +227,16 @@ jobs:
             ## 🚀 Como instalar o `ghelper` no seu terminal (comando: `gh`):
             
             ### Linux
+            Execute o comando abaixo no seu terminal:
             ```bash
             curl -fsSL [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.sh | sh
             ```
             
             ### Windows (PowerShell)
+            Abra o PowerShell e execute o comando abaixo:
             ```powershell
             irm [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
             ```
-          # Se for RC, marca a release do GitHub como "Pre-release" (Sinalização visual amarela no GitHub)
           prerelease: ${{ needs.determine_version.outputs.is_rc == 'true' }}
           draft: false
           files: release_assets/*
