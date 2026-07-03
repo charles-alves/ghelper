@@ -11,11 +11,21 @@ on:
     branches:
       - main
 
+# Evita race conditions ao gerar tags simultâneas
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   determine_version:
-    # Executa se for push nas branches de trabalho OU se for PR mergeado na main
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       next_version: ${{ steps.semver.outputs.next_version }}
       is_rc: ${{ steps.semver.outputs.is_rc }}
@@ -25,6 +35,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Fetch all tags explicitly
+        run: git fetch --tags --force
 
       - name: Calculate Next Version
         id: semver
@@ -103,6 +116,8 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_name: ghelper-windows.zip
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -115,6 +130,8 @@ jobs:
 
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build Binary
         run: cargo build --release --target ${{ matrix.target }}
@@ -130,16 +147,18 @@ jobs:
 
       - name: Package Artifacts (Windows)
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          mkdir dist
-          copy target\${{ matrix.target }}\release\ghelper.exe dist\gh.exe
-          powershell Compress-Archive -Path dist\gh.exe -DestinationPath \${{ matrix.artifact_name }}
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item "target\${{ matrix.target }}\release\ghelper.exe" -Destination "dist\gh.exe"
+          Compress-Archive -Path "dist\gh.exe" -DestinationPath "${{ matrix.artifact_name }}" -Force
 
       - name: Upload Artifacts to Job
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-package
           path: ${{ matrix.artifact_name }}
+          retention-days: 1
 
   create_github_release:
     needs: [ determine_version, build_and_release ]
@@ -191,12 +210,11 @@ jobs:
           Write-Host "Instalação concluída! Reinicie o seu terminal e digite 'gh'."
           EOF
           
-          # 3. SUBSTITUIR OS MARCADORES COM OS VALORES REAIS DO ACTIONS USANDO SED
-          # Usamos o caractere '|' como delimitador no sed para não conflitar com as barras '/' do repositório
+          # 3. SUBSTITUIR OS MARCADORES COM OS VALORES REAIS DO ACTIONS
           sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/install.sh
           sed -i "s|__VERSION__|${{ needs.determine_version.outputs.next_version }}|g" release_assets/install.sh
           
-          sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/install.ps1
+          sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/assets/install.ps1 2>/dev/null || sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/install.ps1
           sed -i "s|__VERSION__|${{ needs.determine_version.outputs.next_version }}|g" release_assets/install.ps1
 
       - name: Create GitHub Release
