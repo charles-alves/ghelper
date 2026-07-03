@@ -16,11 +16,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   determine_version:
-    # Executa se for push nas branches de trabalho OU se for PR mergeado na main
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       next_version: ${{ steps.semver.outputs.next_version }}
       is_rc: ${{ steps.semver.outputs.is_rc }}
@@ -31,6 +36,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch all tags explicitly
+        run: |
+          git fetch --tags --force || echo "Aviso: Não foi possível buscar as tags remotas, usando histórico local."
+
       - name: Calculate Next Version
         id: semver
         run: |
@@ -39,9 +48,17 @@ jobs:
           if [ -z "$LATEST_STABLE_TAG" ]; then
             LATEST_STABLE_TAG="0.0.0"
           fi
-          VERSION=$LATEST_STABLE_TAG
+          VERSION="$LATEST_STABLE_TAG"
           
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          echo "Última versão estável identificada: $VERSION"
+          
+          # Blindagem do READ: Usar echo + read evita que o Bash retorne código de erro 1
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION" || true
+          
+          # Garante que as variáveis não fiquem vazias se o read falhar por string inválida
+          MAJOR=${MAJOR:-0}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
           
           # 2. Identificar a branch atual
           if [ "${{ github.event_name }}" = "push" ]; then
@@ -53,7 +70,6 @@ jobs:
           fi
           
           echo "Branch detectada: $BRANCH_NAME"
-          echo "Última versão estável: $VERSION"
           
           SHOULD_RELEASE="true"
           
@@ -78,7 +94,7 @@ jobs:
           if [ "$IS_RC" = "true" ] && [ "$SHOULD_RELEASE" = "true" ]; then
             # Procura a maior tag RC existente para essa base específica (ex: 1.0.0-RC2)
             LAST_RC_NUMBER=$(git tag -l "$BASE_VERSION-RC*" | sed "s/$BASE_VERSION-RC//" | sort -n | tail -n1)
-            
+          
             if [ -z "$LAST_RC_NUMBER" ]; then
               NEXT_RC_NUMBER=1
             else
@@ -110,7 +126,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
