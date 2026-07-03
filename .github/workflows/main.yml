@@ -22,10 +22,9 @@ defaults:
 
 jobs:
   determine_version:
+    # Executa se for push nas branches de trabalho OU se for PR mergeado na main
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     outputs:
       next_version: ${{ steps.semver.outputs.next_version }}
       is_rc: ${{ steps.semver.outputs.is_rc }}
