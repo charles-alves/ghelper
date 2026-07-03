@@ -199,7 +199,7 @@ jobs:
           URL="https://github.com/__REPO__/releases/download/__VERSION__/ghelper-linux.tar.gz"
           curl -L "$URL" -o ghelper.tar.gz
           tar -xzf ghelper.tar.gz
-          sudo mv gh /usr/local/bin/gh
+          sudo mv -f gh /usr/local/bin/gh
           rm ghelper.tar.gz
           echo "Instalação concluída! Digite 'gh' para começar."
           EOF
