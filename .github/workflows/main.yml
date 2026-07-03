@@ -16,10 +16,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
   determine_version:
     # Executa se for push nas branches de trabalho OU se for PR mergeado na main
