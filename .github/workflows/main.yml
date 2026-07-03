@@ -142,7 +142,7 @@ jobs:
           path: ${{ matrix.artifact_name }}
 
   create_github_release:
-    needs: [determine_version, build_and_release]
+    needs: [ determine_version, build_and_release ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -157,42 +157,47 @@ jobs:
           mkdir release_assets
           find artifacts/ -type f -exec cp {} release_assets/ \;
           
-          VERSION="${{ needs.determine_version.outputs.next_version }}"
-          REPO="${{ github.repository }}"
-          
-          # 1. SCRIPT DE INSTALAÇÃO PARA LINUX (install.sh)
-          cat << EOF > release_assets/install.sh
+          # 1. CRIAR O SCRIPT DO LINUX USANDO MARCADORES LITERAIS
+          cat << 'EOF' > release_assets/install.sh
           #!/bin/sh
           set -e
-          echo "Instalando ghelper (gh) v\$VERSION..."
-          URL="https://github.com/\$REPO/releases/download/\$VERSION/ghelper-linux.tar.gz"
-          curl -L "\$URL" -o ghelper.tar.gz
+          echo "Instalando ghelper (gh) v__VERSION__..."
+          URL="https://github.com/__REPO__/releases/download/__VERSION__/ghelper-linux.tar.gz"
+          curl -L "$URL" -o ghelper.tar.gz
           tar -xzf ghelper.tar.gz
           sudo mv gh /usr/local/bin/gh
           rm ghelper.tar.gz
           echo "Instalação concluída! Digite 'gh' para começar."
           EOF
           
-          # 2. SCRIPT DE INSTALAÇÃO PARA WINDOWS (install.ps1)
-          cat << EOF > release_assets/install.ps1
+          # 2. CRIAR O SCRIPT DO WINDOWS USANDO MARCADORES LITERAIS
+          cat << 'EOF' > release_assets/install.ps1
           Param()
-          Write-Host "Instalando ghelper (gh) v\$VERSION para Windows..."
-          \$Url = "https://github.com/\$REPO/releases/download/\$VERSION/ghelper-windows.zip"
-          \$ZipFile = "\$env:TEMP\ghelper.zip"
-          \$TargetDir = "\$env:USERPROFILE\.ghelper"
+          Write-Host "Instalando ghelper (gh) v__VERSION__ para Windows..."
+          $Url = "https://github.com/__REPO__/releases/download/__VERSION__/ghelper-windows.zip"
+          $ZipFile = "$env:TEMP\ghelper.zip"
+          $TargetDir = "$env:USERPROFILE\.ghelper"
           
-          if (!(Test-Path \$TargetDir)) { New-Item -ItemType Directory -Path \$TargetDir }
-          Invoke-WebRequest -Uri \$Url -OutFile \$ZipFile
-          Expand-Archive -Path \$ZipFile -DestinationPath \$TargetDir -Force
-          Remove-Item \$ZipFile
+          if (!(Test-Path $TargetDir)) { New-Item -ItemType Directory -Path $TargetDir }
+          Invoke-WebRequest -Uri $Url -OutFile $ZipFile
+          Expand-Archive -Path $ZipFile -DestinationPath $TargetDir -Force
+          Remove-Item $ZipFile
           
-          \$UserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-          if (\$UserPath -notlike "*\$TargetDir*") {
-              [Environment]::SetEnvironmentVariable("PATH", "\$UserPath;\$TargetDir", "User")
+          $UserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+          if ($UserPath -notlike "*$TargetDir*") {
+              [Environment]::SetEnvironmentVariable("PATH", "$UserPath;$TargetDir", "User")
               Write-Host "Diretório adicionado ao PATH do usuário."
           }
           Write-Host "Instalação concluída! Reinicie o seu terminal e digite 'gh'."
           EOF
+          
+          # 3. SUBSTITUIR OS MARCADORES COM OS VALORES REAIS DO ACTIONS USANDO SED
+          # Usamos o caractere '|' como delimitador no sed para não conflitar com as barras '/' do repositório
+          sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/install.sh
+          sed -i "s|__VERSION__|${{ needs.determine_version.outputs.next_version }}|g" release_assets/install.sh
+          
+          sed -i "s|__REPO__|${{ github.repository }}|g" release_assets/install.ps1
+          sed -i "s|__VERSION__|${{ needs.determine_version.outputs.next_version }}|g" release_assets/install.ps1
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -203,15 +208,16 @@ jobs:
             ## 🚀 Como instalar o `ghelper` no seu terminal (comando: `gh`):
             
             ### Linux
+            Execute o comando abaixo no seu terminal:
             ```bash
             curl -fsSL [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.sh | sh
             ```
             
             ### Windows (PowerShell)
+            Abra o PowerShell e execute o comando abaixo:
             ```powershell
             irm [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
             ```
-          # Se for RC, marca a release do GitHub como "Pre-release" (Sinalização visual amarela no GitHub)
           prerelease: ${{ needs.determine_version.outputs.is_rc == 'true' }}
           draft: false
           files: release_assets/*
