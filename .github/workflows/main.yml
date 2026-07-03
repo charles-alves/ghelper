@@ -120,7 +120,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             artifact_name: ghelper-linux.tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -132,6 +132,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install musl-tools (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -239,13 +243,13 @@ jobs:
             ### Linux
             Execute o comando abaixo no seu terminal:
             ```bash
-            curl -fsSL [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.sh | sh
+            curl -fsSL https://github.com/charles-alves/ghelper/releases/download/${{ needs.determine_version.outputs.next_version }}/install.sh | sh
             ```
             
             ### Windows (PowerShell)
             Abra o PowerShell e execute o comando abaixo:
             ```powershell
-            irm [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
+            irm https://github.com/charles-alves/ghelper/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
             ```
           prerelease: ${{ needs.determine_version.outputs.is_rc == 'true' }}
           draft: false
