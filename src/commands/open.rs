@@ -33,7 +33,7 @@ fn select_projects(filter: &Option<String>) -> Vec<String> {
         .expect("Não foi possível finalizar a seleção de projetos")
 }
 
-fn sync_projects(selected: &Vec<String>) {
+fn sync_projects(selected: &[String]) {
     for project in selected {
         println!("Atualizando o projeto {}", project);
         if let Err(_) = sync::run(Some(&project)) {

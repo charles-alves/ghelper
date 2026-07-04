@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Select;
 
-pub fn render(prompt: &str, itens: &Vec<String>, default: Option<&str>, theme: &ColorfulTheme) -> Result<String> {
+pub fn render(prompt: &str, itens: &[String], default: Option<&str>, theme: &ColorfulTheme) -> Result<String> {
     let index = default.and_then(|d| itens.iter().position(|i| i == &d));
     let selected_index = Select::with_theme(theme)
         .with_prompt(prompt)

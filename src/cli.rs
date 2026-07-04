@@ -6,7 +6,6 @@ use clap::{Parser, Subcommand};
 
 use crate::cli::checkout_branch_args::CheckoutBranchArgs;
 use crate::cli::config_args::ConfigArgs;
-use crate::cli::console_args::ConsoleArgs;
 
 #[derive(Parser)]
 #[command(

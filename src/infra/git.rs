@@ -105,7 +105,7 @@ fn get_match_remote(output: String, branch_name: &str) -> Vec<String> {
         .collect()
 }
 
-fn select_remote(remote_branches: &Vec<String>) -> String {
+fn select_remote(remote_branches: &[String]) -> String {
     select::render(
         "A branch solicitada existe em mais de um remoto, selecione o desejado",
         &remote_branches,
