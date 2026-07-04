@@ -1,5 +1,6 @@
 use anyhow::Result;
 use glob::glob;
+use std::path::PathBuf;
 
 use crate::infra::project_files;
 
@@ -22,4 +23,14 @@ pub fn list() -> Result<Vec<String>> {
         .map(|e| e.to_string_lossy().to_string())
         .collect();
     Ok(result)
+}
+
+pub fn dir(project: &str) -> Option<PathBuf> {
+    if let Ok(config) = project_files::load_config() {
+        let project_dir = config.workspace.join(project);
+        if project_dir.exists() {
+            return Some(project_dir);
+        }
+    }
+    None
 }

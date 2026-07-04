@@ -6,7 +6,6 @@ use clap::{Parser, Subcommand};
 
 use crate::cli::checkout_branch_args::CheckoutBranchArgs;
 use crate::cli::config_args::ConfigArgs;
-use crate::cli::console_args::ConsoleArgs;
 
 #[derive(Parser)]
 #[command(
@@ -64,37 +63,4 @@ pub enum Command {
     /// Realiza o delete interativo de branchs locais do repositório
     #[command(name = "di")]
     InteractiveDelete,
-    /// Abre o repositório no browser na tela de busca
-    Search {
-        /// Filtro utilizado para realizar a busca
-        filter: Option<String>
-    },
-    /// Abre o devconsole para um projeto e páginas especificadas via parâmetros
-    Console(ConsoleArgs),
-    /// Lista os commits em stash para o repositório
-    #[command(name = "sl")]
-    StashList {},
-    /// Executa o stash para os arquivos alterados no repositório
-    #[command(name = "ss")]
-    StashSave {
-        /// Mantem os arquivos que encontram em stage
-        k: Option<bool>,
-        /// Mensagem para facilitar a identificação do Stash
-        #[arg(short, long)]
-        message: Option<String>,
-    },
-    /// Executa o stash apply para os arquivos alterados no repositório
-    #[command(name = "sa")]
-    StashApply {
-        /// Índice do stash desejado
-        #[arg(short, long)]
-        index: Option<i8>,
-    },
-    /// Executa o stash pop para os arquivos alterados no repositório
-    #[command(name = "sp")]
-    StashPop {
-        /// Índice do stash desejado
-        #[arg(short, long)]
-        index: Option<i8>,
-    }
 }

@@ -4,8 +4,8 @@ use dialoguer::theme::ColorfulTheme;
 
 pub fn render(
     prompt: &str,
-    itens: &Vec<String>,
-    default: &Vec<String>,
+    itens: &[String],
+    default: &[String],
     theme: &ColorfulTheme,
 ) -> Result<Vec<String>> {
     let mut confirm = MultiSelect::with_theme(theme).with_prompt(prompt);
