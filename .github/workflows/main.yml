@@ -1,11 +1,9 @@
 name: Automated Release & RC
 
 on:
-  push:
-    branches:
-      - 'release!/**'
-      - 'release/**'
-      - 'hotfix/**'
+  # Permite disparar a criação de RCs manualmente pelo painel do GitHub
+  workflow_dispatch:
+  # Mantém a automação de release estável ao fechar PRs na main
   pull_request:
     types: [closed]
     branches:
@@ -13,8 +11,8 @@ on:
 
 jobs:
   determine_version:
-    # Executa se for push nas branches de trabalho OU se for PR mergeado na main
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    # Executa se for disparo manual OU se for PR mergeado na main
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     outputs:
       next_version: ${{ steps.semver.outputs.next_version }}
@@ -38,8 +36,8 @@ jobs:
           
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           
-          # 2. Identificar a branch atual
-          if [ "${{ github.event_name }}" = "push" ]; then
+          # 2. Identificar se é um disparo manual (RC) ou automático (Merge na main)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             BRANCH_NAME="${{ github.ref_name }}"
             IS_RC="true"
           else
@@ -52,7 +50,7 @@ jobs:
           
           SHOULD_RELEASE="true"
           
-          # 3. Calcular a base da nova versão
+          # 3. Calcular a base da nova versão usando as regras dos prefixos
           if [[ "$BRANCH_NAME" == release\!/* ]]; then
             MAJOR=$((MAJOR + 1))
             MINOR=0
@@ -63,17 +61,22 @@ jobs:
           elif [[ "$BRANCH_NAME" == hotfix/* ]]; then
             PATCH=$((PATCH + 1))
           else
-            echo "Branch fora do padrão de release. Pulando."
-            SHOULD_RELEASE="false"
+            echo "A branch atual ($BRANCH_NAME) não segue os padrões 'release/', 'release!/' ou 'hotfix/'."
+            if [ "$IS_RC" = "true" ]; then
+              echo "Abortando: RCs manuais só podem ser gerados a partir de branches com esses prefixos."
+              SHOULD_RELEASE="false"
+            else
+              echo "Pulando automação: PR não originado de branch de release."
+              SHOULD_RELEASE="false"
+            fi
           fi
           
           BASE_VERSION="$MAJOR.$MINOR.$PATCH"
           
-          # 4. Se for push, calcular o sufixo incremental -RCX
+          # 4. Se for disparo manual, calcular o sufixo incremental -RCX
           if [ "$IS_RC" = "true" ] && [ "$SHOULD_RELEASE" = "true" ]; then
-            # Procura a maior tag RC existente para essa base específica (ex: 1.0.0-RC2)
             LAST_RC_NUMBER=$(git tag -l "$BASE_VERSION-RC*" | sed "s/$BASE_VERSION-RC//" | sort -n | tail -n1)
-            
+          
             if [ -z "$LAST_RC_NUMBER" ]; then
               NEXT_RC_NUMBER=1
             else
@@ -103,7 +106,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_name: ghelper-windows.zip
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -142,7 +145,7 @@ jobs:
           path: ${{ matrix.artifact_name }}
 
   create_github_release:
-    needs: [ determine_version, build_and_release ]
+    needs: [determine_version, build_and_release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -152,17 +155,14 @@ jobs:
         with:
           path: artifacts
 
-      # Etapa corrigida para estruturar os instaladores sem quebrar as URLs
       - name: Structure Assets & Create Installers
         run: |
           mkdir release_assets
           find artifacts/ -type f -exec cp {} release_assets/ \;
           
-          # Injeta as variáveis do Actions em variáveis de ambiente do shell para o script ler com segurança
           export ACTION_VERSION="${{ needs.determine_version.outputs.next_version }}"
           export ACTION_REPO="${{ github.repository }}"
           
-          # 1. SCRIPT DE INSTALAÇÃO PARA LINUX (install.sh)
           cat << 'EOF' > release_assets/install.sh
           #!/bin/sh
           set -e
@@ -175,7 +175,6 @@ jobs:
           echo "Instalação concluída! Digite 'gh' para começar."
           EOF
           
-          # 2. SCRIPT DE INSTALAÇÃO PARA WINDOWS (install.ps1)
           cat << 'EOF' > release_assets/install.ps1
           Param()
           Write-Host "Instalando ghelper (gh) v$ACTION_VERSION para Windows..."
@@ -196,6 +195,12 @@ jobs:
           Write-Host "Instalação concluída! Reinicie o seu terminal e digite 'gh'."
           EOF
 
+          sed -i "s|__REPO__|$ACTION_REPO|g" release_assets/install.sh
+          sed -i "s|__VERSION__|$ACTION_VERSION|g" release_assets/install.sh
+          
+          sed -i "s|__REPO__|$ACTION_REPO|g" release_assets/install.ps1
+          sed -i "s|__VERSION__|$ACTION_VERSION|g" release_assets/install.ps1
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -213,7 +218,6 @@ jobs:
             ```powershell
             irm [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
             ```
-          # Se for RC, marca a release do GitHub como "Pre-release" (Sinalização visual amarela no GitHub)
           prerelease: ${{ needs.determine_version.outputs.is_rc == 'true' }}
           draft: false
           files: release_assets/*
