@@ -20,7 +20,7 @@ pub fn list() -> Result<Vec<String>> {
     let pattern = format!("{}/*/*/", workspace.to_string_lossy());
     let result = glob(&pattern)?.filter_map(anyhow::Result::ok)
         .map(|e| e.strip_prefix(&workspace).unwrap().to_owned())
-        .map(|e| e.to_string_lossy().to_string())
+        .map(|e| e.to_string_lossy().replace("\\", "/"))
         .collect();
     Ok(result)
 }
