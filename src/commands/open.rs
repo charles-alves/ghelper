@@ -4,7 +4,6 @@ use crate::os;
 use crate::view::mult_select;
 
 use anyhow::Result;
-use dialoguer::theme::ColorfulTheme;
 
 pub(crate) fn run(update: &bool, filter: &Option<String>) -> Result<()> {
     let selected = select_projects(filter);
@@ -28,7 +27,6 @@ fn select_projects(filter: &Option<String>) -> Vec<String> {
         "Selecione os projetos que deseja abrir",
         &projects,
         &vec![],
-        &ColorfulTheme::default(),
     )
         .expect("Não foi possível finalizar a seleção de projetos")
 }

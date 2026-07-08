@@ -2,7 +2,6 @@ use crate::infra::projects;
 use crate::view::confirm;
 
 use anyhow::Result;
-use dialoguer::theme::ColorfulTheme;
 use regex::{Captures, Regex};
 use std::path::Path;
 use std::process::Command;
@@ -72,7 +71,6 @@ fn remove_deleted_branches(branches: &[BranchInfo], project_dir: Option<&Path>) 
     let remove_local = confirm::render(
         "Deseja remover as branches locais deletadas no remoto?",
         Some(false),
-        &ColorfulTheme::default(),
     )
     .unwrap();
     if remove_local {
