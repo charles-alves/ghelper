@@ -152,8 +152,11 @@ jobs:
         with:
           path: artifacts
 
-      # Etapa corrigida para estruturar os instaladores sem quebrar as URLs
+      # Etapa estruturada para criar os instaladores com templates literais e substituição segura
       - name: Structure Assets & Create Installers
+        env:
+          ACTION_VERSION: ${{ needs.determine_version.outputs.next_version }}
+          ACTION_REPO: ${{ github.repository }}
         run: |
           mkdir release_assets
           find artifacts/ -type f -exec cp {} release_assets/ \;
@@ -207,6 +210,7 @@ jobs:
         with:
           tag_name: ${{ needs.determine_version.outputs.next_version }}
           name: Release ${{ needs.determine_version.outputs.next_version }}
+          target_commitish: ${{ github.sha }} # <-- CORREÇÃO: Força a tag a ser criada no commit da branch de origem do evento atual
           body: |
             ## 🚀 Como instalar o `ghelper` no seu terminal (comando: `gh`):
             
