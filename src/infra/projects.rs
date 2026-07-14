@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use crate::infra::project_files;
 
-pub fn list_filter(filter: &Option<String>) -> Result<Vec<String>> {
+pub fn list_filter(filter: Option<&str>) -> Result<Vec<String>> {
     let result = match filter {
         None => list()?,
         Some(filter) => list()?.iter()
