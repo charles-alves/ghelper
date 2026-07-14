@@ -76,7 +76,7 @@ fn remove_deleted_branches(branches: &[BranchInfo], project_dir: Option<&Path>) 
     if remove_local {
         create_git_command(project_dir)
             .args(["branch", "-D", &gone_branches.join(" ")])
-            .status()
+            .output()
             .unwrap();
     }
 }
@@ -97,7 +97,7 @@ fn update_reference_branch(project_dir: Option<&Path>, b: &BranchInfo) {
             format!("refs/heads/{}", branch_name).as_str(),
             format!("refs/remotes/{}", remote_branch).as_str(),
         ])
-        .status()
+        .output()
         .expect(format!("Não foi possível atualizar a branch {}", branch_name).as_str());
 }
 
@@ -111,11 +111,11 @@ fn update_divergent_branches(branches: &[BranchInfo], project_dir: Option<&Path>
         for branch in &branches_divergentes {
             merge_branch(project_dir, &branch);
         }
-        checkout_current(&branches_divergentes, project_dir);
+        checkout_current(&branches, project_dir);
         if stashed {
             create_git_command(project_dir)
-                .args(["Stash", "pop"])
-                .status().unwrap();
+                .args(["stash", "pop"])
+                .output().unwrap();
         }
     }
 }
@@ -123,33 +123,40 @@ fn update_divergent_branches(branches: &[BranchInfo], project_dir: Option<&Path>
 fn merge_branch(project_dir: Option<&Path>, branch: &BranchInfo) {
     create_git_command(project_dir)
         .args(["checkout", branch.name.as_str()])
-        .status().expect(&format!("Não foi possível fazer checkout para banch {}", branch.name.as_str()));
-    let _ = create_git_command(project_dir)
+        .output().expect(&format!("Não foi possível fazer checkout para banch {}", branch.name.as_str()));
+    let output = create_git_command(project_dir)
         .args(["merge", "--no-ff", "--no-edit", branch.remote.as_deref().unwrap()])
-        .status();
+        .output().unwrap();
+    let out_content = std::str::from_utf8(&output.stdout).unwrap();
+    if out_content.contains("CONFLICT") {
+        println!(r#"Não foi possível realizar o merge da branch "{}", resolva os conflitos manualmente"#, branch.name.as_str());
+        create_git_command(project_dir)
+            .args(["merge", "--abort"])
+            .output().unwrap();
+    }
 }
 
-fn checkout_current(branches_divergentes: &[&BranchInfo], project_dir: Option<&Path>) {
+fn checkout_current(branches_divergentes: &[BranchInfo], project_dir: Option<&Path>) {
     let current = branches_divergentes.iter()
         .find(|b| b.current)
         .unwrap();
     create_git_command(project_dir)
         .args(["checkout", current.name.as_str()])
-        .status().unwrap();
+        .output().unwrap();
 }
 
-fn stash_changes(project_dir: Option<&Path>) -> bool{
+fn stash_changes(project_dir: Option<&Path>) -> bool {
     let status_output = create_git_command(project_dir)
         .args(["status"])
         .output().expect("Erro ao verificar status do repositório");
     if status_output.status.success() {
         let content = String::from_utf8(status_output.stdout).unwrap();
-        if !content.contains("Changes not staged for commit:") {
-            create_git_command(project_dir)
+        if content.contains("Changes not staged for commit:") {
+            let output = create_git_command(project_dir)
                 .args(["stash", "save", "-u"])
-                .status()
+                .output()
                 .expect("Não foi possível realizar o stash de forma seguras das informações não commitadas");
-            return true
+            return output.status.success();
         }
     }
     false
