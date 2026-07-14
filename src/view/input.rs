@@ -1,9 +1,8 @@
 use anyhow::Result;
-use dialoguer::theme::ColorfulTheme;
 use dialoguer::Input;
 
-pub fn render(prompt: &str, default: Option<&str>, theme: &ColorfulTheme) -> Result<Option<String>> {
-    let mut input = Input::<String>::with_theme(theme)
+pub fn render(prompt: &str, default: Option<&str>) -> Result<Option<String>> {
+    let mut input = Input::<String>::new()
         .with_prompt(prompt);
     if let Some(default) = default {
         input = input.default(default.to_string());

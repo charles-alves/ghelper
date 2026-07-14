@@ -63,4 +63,7 @@ pub enum Command {
     /// Realiza o delete interativo de branchs locais do repositório
     #[command(name = "di")]
     InteractiveDelete,
+    Sync {
+        project: Option<String>,
+    }
 }

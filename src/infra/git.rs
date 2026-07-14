@@ -3,7 +3,6 @@ use crate::os::exec_output::ExecOutput;
 use crate::os::exec_output::ExecOutput::Success;
 use crate::view::select;
 
-use dialoguer::theme::ColorfulTheme;
 use regex::Regex;
 
 pub enum BranchLocation {
@@ -109,8 +108,7 @@ fn select_remote(remote_branches: &[String]) -> String {
     select::render(
         "A branch solicitada existe em mais de um remoto, selecione o desejado",
         &remote_branches,
-        Some("origin"),
-        &ColorfulTheme::default()
+        Some("origin")
     )
         .expect("Não foi possível executar a seleção de remotos")
 }

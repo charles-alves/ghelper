@@ -1,13 +1,12 @@
 use anyhow::{bail, Result};
-use dialoguer::theme::ColorfulTheme;
 use regex::Regex;
 use std::path::PathBuf;
 use std::{fs, process::Command};
 use url::Url;
 
 use crate::infra::project_files;
-use crate::view::confirm;
 use crate::os;
+use crate::view::confirm;
 
 pub(crate) fn run(repo: &str) -> Result<()> {
     let project = match get_repo_values(repo)? {
@@ -17,7 +16,7 @@ pub(crate) fn run(repo: &str) -> Result<()> {
     let group_dir = project_files::workspace()?.join(&project.0);
     if group_dir.join(&project.1).exists() {
         println!("Já existe o projeto localmente");
-        let execut_sync = confirm::render("Deseja atualizar o repositório?", Some(true), &ColorfulTheme::default())?;
+        let execut_sync = confirm::render("Deseja atualizar o repositório?", Some(true))?;
         if execut_sync {
             println!("Executar Sincroniazação");
         }

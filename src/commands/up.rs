@@ -4,7 +4,6 @@ use crate::os::exec_output::ExecOutput::Success;
 use crate::view::select;
 
 use anyhow::{bail, Context, Result};
-use dialoguer::theme::ColorfulTheme;
 use std::process::Command;
 
 pub(crate) fn run(force: bool) -> Result<()> {
@@ -26,7 +25,6 @@ pub(crate) fn run(force: bool) -> Result<()> {
                         "Selecione um remoto para subir a branch",
                         &remotes,
                         Some("origin"),
-                        &ColorfulTheme::default(),
                     )?;
                     truncate_to_remote(&remote, force)?;
                 } else {

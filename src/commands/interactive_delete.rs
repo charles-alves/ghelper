@@ -1,5 +1,4 @@
 use anyhow::{bail, Result};
-use dialoguer::theme::ColorfulTheme;
 use std::process::Command;
 
 use crate::infra::git;
@@ -16,14 +15,12 @@ pub fn run() -> Result<()> {
     }
     let selected = mult_select::render(
         "Quais branches serão deletadas?",
-            &branches,
-            &vec![],
-            &ColorfulTheme::default()
+        &branches,
+        &vec![]
     )?;
     let confirmed = confirm::render(
         "Tem certeza que deseja apagar as branches selecionadas",
-        Some(false),
-        &ColorfulTheme::default()
+        Some(false)
     )?;
     if confirmed {
         for branch in selected {

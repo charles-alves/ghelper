@@ -24,7 +24,8 @@ async fn main() -> Result<()> {
             commands::checkout::run(branch_type.value(), branch.as_deref(), native_args)?,
         Command::InteractiveCheckout => commands::interactive_checkout::run()?,
         Command::Up { force } => commands::up::run(force.clone())?,
-        Command::InteractiveDelete => commands::interactive_delete::run()?
+        Command::InteractiveDelete => commands::interactive_delete::run()?,
+        Command::Sync { project } => commands::sync::run(project.as_deref())?,
     }
     Ok(())
 }

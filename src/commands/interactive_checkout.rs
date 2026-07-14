@@ -4,7 +4,6 @@ use crate::os::exec_output::ExecOutput::{Failure, Success};
 use crate::view::select;
 
 use anyhow::{bail, Result};
-use dialoguer::theme::ColorfulTheme;
 use regex::Regex;
 use std::collections::HashSet;
 
@@ -20,8 +19,7 @@ pub(crate) fn run() -> Result<()> {
     let selected_branch = select::render(
         "Selecione a branch que deseja realizar checkout",
         &branches,
-        current_branch.as_deref(),
-        &ColorfulTheme::default()
+        current_branch.as_deref()
     )?;
     if current_branch.as_deref() != Some(&selected_branch) {
         git::checkout(&selected_branch);
