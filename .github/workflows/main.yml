@@ -97,7 +97,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             artifact_name: ghelper-linux.tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -118,6 +118,8 @@ jobs:
 
       - name: Build Binary
         run: cargo build --release --target ${{ matrix.target }}
+        env:
+          RUSTFLAGS: "-C linker=rust-lld"
 
       - name: Package Artifacts (Linux)
         if: matrix.os == 'ubuntu-latest'
@@ -210,7 +212,7 @@ jobs:
         with:
           tag_name: ${{ needs.determine_version.outputs.next_version }}
           name: Release ${{ needs.determine_version.outputs.next_version }}
-          target_commitish: ${{ github.sha }} # <-- CORREÇÃO: Força a tag a ser criada no commit da branch de origem do evento atual
+          target_commitish: ${{ github.sha }}
           body: |
             ## 🚀 Como instalar o `ghelper` no seu terminal (comando: `gh`):
             
@@ -223,7 +225,6 @@ jobs:
             ```powershell
             irm [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
             ```
-          # Se for RC, marca a release do GitHub como "Pre-release" (Sinalização visual amarela no GitHub)
           prerelease: ${{ needs.determine_version.outputs.is_rc == 'true' }}
           draft: false
           files: release_assets/*
