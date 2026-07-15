@@ -80,7 +80,8 @@ fn remove_deleted_branches(branches: &[BranchInfo], project_dir: Option<&Path>) 
     .unwrap();
     if remove_local {
         create_git_command(project_dir)
-            .args(["branch", "-D", &gone_branches.join(" ")])
+            .args(["branch", "-D"])
+            .args(&gone_branches)
             .output()
             .unwrap();
     }
