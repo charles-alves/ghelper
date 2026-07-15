@@ -57,7 +57,7 @@ fn branches_info(project_dir: Option<&Path>) -> Vec<BranchInfo> {
         .expect("Não foi possível identificar");
     if output.status.success() {
         let regex = Regex::new(r"^(?P<atual>\*)?\s+(?P<local>[^\s]+)\s+(?P<hash>[0-9a-f]{7,})\s+(?:\[(?P<remoto>[^\]:]+)(?::\s*(?P<status>[^\]]+))?\]\s+)?(?P<mensagem>.*)$").unwrap();
-        return String::from_utf8(output.stdout).unwrap().lines()
+        return String::from_utf8_lossy(&output.stdout).to_string().lines()
             .filter_map(|line| regex.captures(line))
             .map(BranchInfo::from)
             .collect();
@@ -133,7 +133,7 @@ fn merge_branch(project_dir: Option<&Path>, branch: &BranchInfo) {
     let output = create_git_command(project_dir)
         .args(["merge", "--no-ff", "--no-edit", branch.remote.as_deref().unwrap()])
         .output().unwrap();
-    let out_content = std::str::from_utf8(&output.stdout).unwrap();
+    let out_content = String::from_utf8_lossy(&output.stdout).to_string();
     if out_content.contains("CONFLICT") {
         println!(r#"Não foi possível realizar o merge da branch "{}", resolva os conflitos manualmente"#, branch.name.as_str());
         create_git_command(project_dir)
@@ -156,7 +156,7 @@ fn stash_changes(project_dir: Option<&Path>) -> bool {
         .args(["status"])
         .output().expect("Erro ao verificar status do repositório");
     if status_output.status.success() {
-        let content = String::from_utf8(status_output.stdout).unwrap();
+        let content = String::from_utf8_lossy(&status_output.stdout).to_string();
         if content.contains("Changes not staged for commit:") {
             let output = create_git_command(project_dir)
                 .args(["stash", "save", "-u"])
