@@ -11,8 +11,7 @@ use anyhow::Result;
 use clap::Parser;
 use cli::Cli;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
     match &cli.command {
         Command::Config(args) => commands::config::run(args)?,
