@@ -3,7 +3,6 @@ use crate::os::exec_output::ExecOutput;
 use crate::os::exec_output::ExecOutput::Success;
 use crate::view::select;
 
-use dialoguer::theme::ColorfulTheme;
 use regex::Regex;
 
 pub enum BranchLocation {
@@ -30,6 +29,27 @@ pub fn checkout(branch_name: &str) {
         .expect(&format!("Não foi possível finalizar o checkout para branch {}", branch_name));
 }
 
+pub fn pwd() -> String {
+    let branch_output = os::execute("git branch --show-current", None)
+        .expect("Não foi possível recuperar o nome da branch atual");
+    match branch_output {
+        Success(output) => output.trim().to_string(),
+        ExecOutput::Failure(outerr) => panic!("{outerr}")
+    }
+}
+
+pub fn local_branches() -> Vec<String> {
+    let result = os::execute("git branch --format \"%(refname:short)\"", None)
+        .expect("Não foi possível identificar branches no diretório atual");
+    if let Success(output) = result {
+        output.lines()
+            .map(String::from)
+            .collect()
+    } else {
+        vec![]
+    }
+}
+
 pub fn exists_branch(branch_name: &str) -> BranchLocation {
     if exists_local(branch_name) {
         return BranchLocation::Local
@@ -41,7 +61,7 @@ pub fn exists_branch(branch_name: &str) -> BranchLocation {
 
 fn exists_local(branch_name: &str) -> bool {
     let output = execute_local_branch_list();
-    let branch_regx = Regex::new(format!(r"^[\s*]\s{}$", branch_name).as_str())
+    let branch_regx = Regex::new(format!(r"^[\s*]\s{}$", regex::escape(branch_name)).as_str())
         .expect("Falha ao criar regex para branches locais");
     if let Success(output) = output {
         output.lines().any(|line| branch_regx.is_match(line))
@@ -84,12 +104,11 @@ fn get_match_remote(output: String, branch_name: &str) -> Vec<String> {
         .collect()
 }
 
-fn select_remote(remote_branches: &Vec<String>) -> String {
+fn select_remote(remote_branches: &[String]) -> String {
     select::render(
         "A branch solicitada existe em mais de um remoto, selecione o desejado",
         &remote_branches,
-        Some("origin"),
-        &ColorfulTheme::default()
+        Some("origin")
     )
         .expect("Não foi possível executar a seleção de remotos")
 }

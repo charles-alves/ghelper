@@ -1,14 +1,8 @@
 use anyhow::Result;
 use dialoguer::MultiSelect;
-use dialoguer::theme::ColorfulTheme;
 
-pub fn render(
-    prompt: &str,
-    itens: &Vec<String>,
-    default: &Vec<String>,
-    theme: &ColorfulTheme,
-) -> Result<Vec<String>> {
-    let mut confirm = MultiSelect::with_theme(theme).with_prompt(prompt);
+pub fn render(prompt: &str, itens: &[String], default: &[String]) -> Result<Vec<String>> {
+    let mut confirm = MultiSelect::new().with_prompt(prompt);
     if !default.is_empty() {
         let defaults: Vec<bool> = itens.iter().map(|v| default.contains(v)).collect();
         confirm = confirm.defaults(&defaults);

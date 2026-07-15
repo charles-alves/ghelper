@@ -4,11 +4,10 @@ use crate::os;
 use crate::view::mult_select;
 
 use anyhow::Result;
-use dialoguer::theme::ColorfulTheme;
 
-pub(crate) fn run(update: &bool, filter: &Option<String>) -> Result<()> {
+pub(crate) fn run(update: bool, filter: Option<&str>) -> Result<()> {
     let selected = select_projects(filter);
-    if *update {
+    if update {
         sync_projects(&selected);
     }
     for project in &selected {
@@ -17,7 +16,7 @@ pub(crate) fn run(update: &bool, filter: &Option<String>) -> Result<()> {
     Ok(())
 }
 
-fn select_projects(filter: &Option<String>) -> Vec<String> {
+fn select_projects(filter: Option<&str>) -> Vec<String> {
     let projects = projects::list_filter(filter)
         .expect("Não foi possível listar projetos do Workspace");
     if projects.is_empty() {
@@ -28,12 +27,11 @@ fn select_projects(filter: &Option<String>) -> Vec<String> {
         "Selecione os projetos que deseja abrir",
         &projects,
         &vec![],
-        &ColorfulTheme::default(),
     )
         .expect("Não foi possível finalizar a seleção de projetos")
 }
 
-fn sync_projects(selected: &Vec<String>) {
+fn sync_projects(selected: &[String]) {
     for project in selected {
         println!("Atualizando o projeto {}", project);
         if let Err(_) = sync::run(Some(&project)) {

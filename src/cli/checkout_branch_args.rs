@@ -1,6 +1,7 @@
+use clap::{Args, ValueEnum};
 use std::fmt::{Display, Formatter};
-use clap::Args;
 
+#[derive(ValueEnum, Clone)]
 pub enum BranchType {
     MajorRelease,
     Release,

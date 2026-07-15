@@ -4,7 +4,7 @@ use std::process::Command;
 use crate::cli::checkout_branch_args::BranchType;
 use crate::infra::git;
 
-pub(crate) fn run(branch_type: Option<BranchType>, branch: Option<&str>, native_args: &Vec<String>) -> Result<()> {
+pub(crate) fn run(branch_type: Option<BranchType>, branch: Option<&str>, native_args: &[String]) -> Result<()> {
     if branch == Some("-") {
         if branch_type.is_some() {
             bail!("Não é permitido utilizar o parâmetro \"-\" junto com um modificador de branch")

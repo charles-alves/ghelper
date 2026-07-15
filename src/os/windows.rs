@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use crate::infra::project_files;
 use crate::os::exec_output::ExecOutput;
@@ -13,6 +13,9 @@ pub fn execute(command: &str, repo: Option<&str>) -> Result<ExecOutput> {
 pub fn execute_forgot(command: &str, repo: Option<&str>) -> Result<()> {
     init_command(repo)?
         .arg(format!("{{ {} }} > null", command))
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
         .spawn()
         .context("Não foi possível executar o comando solicitado")
         .map(|_| ())
