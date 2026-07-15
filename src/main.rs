@@ -2,8 +2,8 @@ mod cli;
 mod commands;
 mod infra;
 mod domain;
-pub mod view;
-pub mod os;
+mod view;
+mod os;
 
 use crate::cli::Command;
 
