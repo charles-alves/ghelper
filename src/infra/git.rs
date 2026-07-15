@@ -61,7 +61,7 @@ pub fn exists_branch(branch_name: &str) -> BranchLocation {
 
 fn exists_local(branch_name: &str) -> bool {
     let output = execute_local_branch_list();
-    let branch_regx = Regex::new(format!(r"^[\s*]\s{}$", branch_name).as_str())
+    let branch_regx = Regex::new(format!(r"^[\s*]\s{}$", regex::escape(branch_name)).as_str())
         .expect("Falha ao criar regex para branches locais");
     if let Success(output) = output {
         output.lines().any(|line| branch_regx.is_match(line))

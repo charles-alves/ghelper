@@ -1,4 +1,3 @@
-pub mod console_args;
 pub mod config_args;
 pub mod checkout_branch_args;
 
@@ -63,7 +62,9 @@ pub enum Command {
     /// Realiza o delete interativo de branchs locais do repositório
     #[command(name = "di")]
     InteractiveDelete,
+    /// Realiza a sincronização entre as branches locais e remotas
     Sync {
+        /// Nome do projeto que será sincronizado
         project: Option<String>,
     }
 }

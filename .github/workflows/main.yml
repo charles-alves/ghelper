@@ -1,11 +1,8 @@
 name: Automated Release & RC
 
 on:
-  push:
-    branches:
-      - 'release!/**'
-      - 'release/**'
-      - 'hotfix/**'
+  # RC: disparo manual — selecione a branch release/hotfix no GitHub Actions
+  workflow_dispatch:
   pull_request:
     types: [closed]
     branches:
@@ -13,8 +10,9 @@ on:
 
 jobs:
   determine_version:
-    # Executa se for push nas branches de trabalho OU se for PR mergeado na main
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     outputs:
       next_version: ${{ steps.semver.outputs.next_version }}
@@ -35,23 +33,23 @@ jobs:
             LATEST_STABLE_TAG="0.0.0"
           fi
           VERSION=$LATEST_STABLE_TAG
-          
+
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          
-          # 2. Identificar a branch atual
-          if [ "${{ github.event_name }}" = "push" ]; then
+
+          # 2. Identificar a branch e o tipo de release
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             BRANCH_NAME="${{ github.ref_name }}"
             IS_RC="true"
           else
             BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
             IS_RC="false"
           fi
-          
+
           echo "Branch detectada: $BRANCH_NAME"
           echo "Última versão estável: $VERSION"
-          
+
           SHOULD_RELEASE="true"
-          
+
           # 3. Calcular a base da nova versão
           if [[ "$BRANCH_NAME" == release\!/* ]]; then
             MAJOR=$((MAJOR + 1))
@@ -63,17 +61,16 @@ jobs:
           elif [[ "$BRANCH_NAME" == hotfix/* ]]; then
             PATCH=$((PATCH + 1))
           else
-            echo "Branch fora do padrão de release. Pulando."
+            echo "Branch fora do padrão de release ($BRANCH_NAME). Pulando."
             SHOULD_RELEASE="false"
           fi
-          
+
           BASE_VERSION="$MAJOR.$MINOR.$PATCH"
-          
-          # 4. Se for push, calcular o sufixo incremental -RCX
+
+          # 4. RC manual: incrementa sufixo -RCX apenas quando disparado via workflow_dispatch
           if [ "$IS_RC" = "true" ] && [ "$SHOULD_RELEASE" = "true" ]; then
-            # Procura a maior tag RC existente para essa base específica (ex: 1.0.0-RC2)
             LAST_RC_NUMBER=$(git tag -l "$BASE_VERSION-RC*" | sed "s/$BASE_VERSION-RC//" | sort -n | tail -n1)
-          
+
             if [ -z "$LAST_RC_NUMBER" ]; then
               NEXT_RC_NUMBER=1
             else
@@ -83,9 +80,9 @@ jobs:
           else
             FINAL_VERSION="$BASE_VERSION"
           fi
-          
+
           echo "Versão final calculada: $FINAL_VERSION"
-          
+
           echo "next_version=$FINAL_VERSION" >> $GITHUB_OUTPUT
           echo "is_rc=$IS_RC" >> $GITHUB_OUTPUT
           echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
@@ -107,6 +104,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install musl tools
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -135,7 +136,7 @@ jobs:
         run: |
           mkdir dist
           copy target\${{ matrix.target }}\release\ghelper.exe dist\gh.exe
-          powershell Compress-Archive -Path dist\gh.exe -DestinationPath \${{ matrix.artifact_name }}
+          powershell Compress-Archive -Path dist\gh.exe -DestinationPath ${{ matrix.artifact_name }}
 
       - name: Upload Artifacts to Job
         uses: actions/upload-artifact@v4
@@ -154,58 +155,51 @@ jobs:
         with:
           path: artifacts
 
-      # Etapa estruturada para criar os instaladores com templates literais e substituição segura
       - name: Structure Assets & Create Installers
         env:
           ACTION_VERSION: ${{ needs.determine_version.outputs.next_version }}
           ACTION_REPO: ${{ github.repository }}
         run: |
-          mkdir release_assets
+          mkdir -p release_assets
           find artifacts/ -type f -exec cp {} release_assets/ \;
-          
-          # Injeta as variáveis do Actions em variáveis de ambiente do shell para o script ler com segurança
-          export ACTION_VERSION="${{ needs.determine_version.outputs.next_version }}"
-          export ACTION_REPO="${{ github.repository }}"
-          
-          # 1. SCRIPT DE INSTALAÇÃO PARA LINUX (install.sh)
-          cat << 'EOF' > release_assets/install.sh
+
+          cat > release_assets/install.sh << 'INSTALL_EOF'
           #!/bin/sh
           set -e
-          echo "Instalando ghelper (gh) v$ACTION_VERSION..."
-          URL="https://github.com/$ACTION_REPO/releases/download/$ACTION_VERSION/ghelper-linux.tar.gz"
-          curl -L "$URL" -o ghelper.tar.gz
+          echo "Instalando ghelper (gh) v__VERSION__..."
+          URL="https://github.com/__REPO__/releases/download/__VERSION__/ghelper-linux.tar.gz"
+          curl -fsSL "$URL" -o ghelper.tar.gz
           tar -xzf ghelper.tar.gz
           sudo mv gh /usr/local/bin/gh
           rm ghelper.tar.gz
           echo "Instalação concluída! Digite 'gh' para começar."
-          EOF
-          
-          # 2. SCRIPT DE INSTALAÇÃO PARA WINDOWS (install.ps1)
-          cat << 'EOF' > release_assets/install.ps1
+          INSTALL_EOF
+
+          cat > release_assets/install.ps1 << 'INSTALL_EOF'
           Param()
-          Write-Host "Instalando ghelper (gh) v$ACTION_VERSION para Windows..."
-          $Url = "https://github.com/$ACTION_REPO/releases/download/$ACTION_VERSION/ghelper-windows.zip"
+          Write-Host "Instalando ghelper (gh) v__VERSION__ para Windows..."
+          $Url = "https://github.com/__REPO__/releases/download/__VERSION__/ghelper-windows.zip"
           $ZipFile = "$env:TEMP\ghelper.zip"
           $TargetDir = "$env:USERPROFILE\.ghelper"
-          
-          if (!(Test-Path $TargetDir)) { New-Item -ItemType Directory -Path $TargetDir }
+
+          if (!(Test-Path $TargetDir)) { New-Item -ItemType Directory -Path $TargetDir | Out-Null }
           Invoke-WebRequest -Uri $Url -OutFile $ZipFile
           Expand-Archive -Path $ZipFile -DestinationPath $TargetDir -Force
           Remove-Item $ZipFile
-          
+
           $UserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
           if ($UserPath -notlike "*$TargetDir*") {
               [Environment]::SetEnvironmentVariable("PATH", "$UserPath;$TargetDir", "User")
               Write-Host "Diretório adicionado ao PATH do usuário."
           }
           Write-Host "Instalação concluída! Reinicie o seu terminal e digite 'gh'."
-          EOF
+          INSTALL_EOF
 
-          sed -i "s|__REPO__|$ACTION_REPO|g" release_assets/install.sh
-          sed -i "s|__VERSION__|$ACTION_VERSION|g" release_assets/install.sh
-          
-          sed -i "s|__REPO__|$ACTION_REPO|g" release_assets/install.ps1
-          sed -i "s|__VERSION__|$ACTION_VERSION|g" release_assets/install.ps1
+          sed -i "s|__REPO__|${ACTION_REPO}|g" release_assets/install.sh
+          sed -i "s|__VERSION__|${ACTION_VERSION}|g" release_assets/install.sh
+          sed -i "s|__REPO__|${ACTION_REPO}|g" release_assets/install.ps1
+          sed -i "s|__VERSION__|${ACTION_VERSION}|g" release_assets/install.ps1
+          chmod +x release_assets/install.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -214,16 +208,16 @@ jobs:
           name: Release ${{ needs.determine_version.outputs.next_version }}
           target_commitish: ${{ github.sha }}
           body: |
-            ## 🚀 Como instalar o `ghelper` no seu terminal (comando: `gh`):
-            
+            ## Como instalar o `ghelper` no seu terminal (comando: `gh`)
+
             ### Linux
             ```bash
-            curl -fsSL [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.sh | sh
+            curl -fsSL https://github.com/${{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.sh | sh
             ```
-            
+
             ### Windows (PowerShell)
             ```powershell
-            irm [https://github.com/$](https://github.com/$){{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
+            irm https://github.com/${{ github.repository }}/releases/download/${{ needs.determine_version.outputs.next_version }}/install.ps1 | iex
             ```
           prerelease: ${{ needs.determine_version.outputs.is_rc == 'true' }}
           draft: false
