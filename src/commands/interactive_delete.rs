@@ -23,11 +23,10 @@ pub fn run() -> Result<()> {
         Some(false)
     )?;
     if confirmed {
-        for branch in selected {
-            Command::new("git")
-                .args(vec!["branch", "-D", &branch])
-                .status()?;
-        }
+        Command::new("git")
+            .args(["branch", "-D"])
+            .args(&selected)
+            .status()?;
     }
     Ok(())
 }
