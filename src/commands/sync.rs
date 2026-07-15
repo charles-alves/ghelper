@@ -46,6 +46,11 @@ pub fn run(project: Option<&str>) -> Result<()> {
 }
 
 fn branches_info(project_dir: Option<&Path>) -> Vec<BranchInfo> {
+    println!("Buscando atualizações no remoto");
+    create_git_command(project_dir)
+        .args(["fetch", "--prune", "--all"])
+        .output()
+        .expect("Não foi possível atualizar a branch local");
     let output = create_git_command(project_dir)
         .args(["branch", "-vv"])
         .output()
