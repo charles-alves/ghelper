@@ -1,6 +1,7 @@
 name: Automated Release & RC
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'release!/**'
