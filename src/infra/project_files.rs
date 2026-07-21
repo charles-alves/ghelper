@@ -27,7 +27,7 @@ pub fn save_config(config: &AppConfig) -> Result<()> {
 }
 
 fn project_dir() -> Result<PathBuf> {
-    if let Some(proj_dir) = ProjectDirs::from("br", "acidco","ghhelper") {
+    if let Some(proj_dir) = ProjectDirs::from("br", "acidco","ghelper") {
         let path = proj_dir.config_dir();
         fs::create_dir_all(path).expect("Não foi possível criar o diretório de configuração");
         return Ok(path.to_path_buf());

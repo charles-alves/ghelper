@@ -10,9 +10,9 @@ pub enum ExecOutput {
 impl From<Output> for ExecOutput {
     fn from(value: Output) -> Self {
         if value.status.success() {
-            Self::Success(String::from_utf8(value.stdout).unwrap())
+            Self::Success(String::from_utf8_lossy(&value.stdout).to_string())
         } else {
-            Failure(String::from_utf8(value.stderr).unwrap())
+            Failure(String::from_utf8_lossy(&value.stderr).to_string())
         }
     }
 }

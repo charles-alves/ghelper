@@ -2,8 +2,8 @@ mod cli;
 mod commands;
 mod infra;
 mod domain;
-pub mod view;
-pub mod os;
+mod view;
+mod os;
 
 use crate::cli::Command;
 
@@ -11,8 +11,7 @@ use anyhow::Result;
 use clap::Parser;
 use cli::Cli;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
     match &cli.command {
         Command::Config(args) => commands::config::run(args)?,
